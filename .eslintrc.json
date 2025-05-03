@@ -2,6 +2,5 @@
   "extends": [
     "next/core-web-vitals",
     "next/typescript"
-  ],
-  "json.schemaDownload.enable": false
+  ]
 }
