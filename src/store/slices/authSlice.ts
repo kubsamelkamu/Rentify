@@ -22,6 +22,7 @@ interface AuthState {
   token: string | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
+  loading: boolean;
 }
 
 const initialState: AuthState = {
@@ -29,6 +30,7 @@ const initialState: AuthState = {
   token: null,
   status: 'idle',
   error: null,
+  loading: false,
 };
 
 const authSlice = createSlice({
@@ -47,7 +49,7 @@ const authSlice = createSlice({
       .addCase(registerUser.fulfilled, (state) => { state.status = 'succeeded'; })
       .addCase(registerUser.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message ?? null;
+        state.error = action.error.message ?? 'Failed to register';
       })
       .addCase(loginUser.pending, (state) => { state.status = 'loading'; })
       .addCase(loginUser.fulfilled, (state, action) => {
@@ -58,7 +60,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message ?? null;
+        state.error = action.error.message ?? 'Failed to login';
       });
   },
 });
