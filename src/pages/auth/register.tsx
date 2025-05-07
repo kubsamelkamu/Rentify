@@ -77,7 +77,7 @@ const RegisterPage = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-2 block h-8 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                  className="mt-2 block h-7 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   placeholder="John Doe"
                   required
                 />
@@ -90,7 +90,7 @@ const RegisterPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-2 block h-8 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                  className="mt-2 block h-7 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   placeholder="email@example.com"
                   required
                 />
@@ -103,7 +103,7 @@ const RegisterPage = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="mt-2 block h-8 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                  className="mt-2 block h-7 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   placeholder="********"
                   required
                 />
@@ -116,7 +116,7 @@ const RegisterPage = () => {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="mt-2 block h-8 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                  className="mt-2 block h-7 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   placeholder="********"
                   required
                 />
@@ -147,6 +147,15 @@ const RegisterPage = () => {
               >
                 {loading ? 'Registering…' : 'Create Account'}
               </button>
+              <p className="text-sm text-gray-600 text-center">
+                Already have an account?{' '}
+                <a
+                  href="/auth/login"
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  Login 
+                </a>
+              </p>
             </form>
           </div>
         </div>
