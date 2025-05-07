@@ -56,7 +56,7 @@ const RegisterPage = () => {
       <div className="min-h-screen flex flex-col lg:flex-row">
         <div className="hidden lg:block lg:w-1/2 relative">
           <Image
-            src="/images/register-bg.jpg"
+            src="/register-bg.jpg"
             alt="Register background"
             layout="fill"
             objectFit="cover"
@@ -66,7 +66,6 @@ const RegisterPage = () => {
         <div className="flex-1 flex items-center justify-center p-8 bg-gray-100">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">
             <div className="flex items-center justify-center mb-6">
-              <Image src="/logo.svg" alt="Rentify" width={48} height={48} />
               <h1 className="text-4xl font-extrabold ml-2 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">Rentify</h1>
             </div>
             <form onSubmit={handleSubmit} className="space-y-6">
