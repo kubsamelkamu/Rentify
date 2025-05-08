@@ -1,21 +1,26 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { loginUser } from '@/store/slices/authSlice';
+import { loginUser, clearError } from '@/store/slices/authSlice';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { loading, error } = useAppSelector((state) => state.auth);
+  const { loading, error: apiError } = useAppSelector((state) => state.auth);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Clear stale errors on mount
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -24,7 +29,6 @@ export default function LoginPage() {
       setFormError('Please enter both email and password.');
       return;
     }
-
     try {
       await dispatch(loginUser({ email, password })).unwrap();
       router.push('/');
@@ -41,7 +45,7 @@ export default function LoginPage() {
         <meta name="description" content="Login to your Rentify account to manage your rentals." />
       </Head>
       <div className="min-h-screen flex flex-col lg:flex-row">
-        
+        {/* Illustrative side */}
         <div className="hidden lg:block lg:w-1/2 relative">
           <Image
             src="/login_bg.jpg"
@@ -52,21 +56,20 @@ export default function LoginPage() {
             className="object-cover"
           />
         </div>
-
+        {/* Form side */}
         <div className="flex-1 flex items-center justify-center bg-gray-100 p-8">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">
-            <div className="flex items-center justify-center mb-6">
-              <h1 className="text-4xl font-extrabold text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
-                Rentify
-              </h1>
-            </div>
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4 text-center">
-              Welcome back!
-            </h2>
-            {(formError || error) && (
-              <p className="text-red-500 text-sm mb-4 text-center">{formError || error}</p>
+            <h1 className="text-4xl font-extrabold text-center mb-6 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
+              Rentify
+            </h1>
+            <h2 className="text-2xl font-semibold text-gray-700 mb-4 text-center">Welcome back!</h2>
+
+            {(formError || apiError) && (
+              <p className="text-red-500 text-sm mb-4 text-center">{formError || apiError}</p>
             )}
+
             <form onSubmit={handleLogin} className="space-y-6">
+              {/* Email */}
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Mail className="mr-2 text-indigo-500" size={18} /> Email Address
@@ -76,11 +79,11 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   placeholder="you@example.com"
+                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                 />
               </div>
-
+              {/* Password with toggle */}
               <div className="relative">
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Lock className="mr-2 text-indigo-500" size={18} /> Password
@@ -90,8 +93,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm pr-10 focus:border-purple-500 focus:ring-purple-500"
                   placeholder="********"
+                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm pr-10 focus:border-purple-500 focus:ring-purple-500"
                 />
                 <button
                   type="button"
@@ -111,16 +114,17 @@ export default function LoginPage() {
                 {loading ? 'Logging in…' : 'Login'}
               </button>
             </form>
+
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600">
-                <Link href="/auth/reset-password" className="text-purple-600 hover:underline font-medium">
+                <Link href="/auth/reset-password"className="text-purple-600 hover:underline font-medium">
                 Forgot your password?
                 </Link>
               </p>
               <p className="text-sm text-gray-600">
                 Don&apos;t have an account?{' '}
                 <Link href="/auth/register" className="text-purple-600 hover:underline font-medium">
-                Sign up
+                 Sign up
                 </Link>
               </p>
             </div>
