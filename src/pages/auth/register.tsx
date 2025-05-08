@@ -1,49 +1,47 @@
 import { useState, FormEvent } from 'react';
-import { registerUser } from '@/store/slices/authSlice';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import Head from 'next/head';
+import Link from 'next/link';
 import Image from 'next/image';
+import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/router';
-import { User, Mail, Lock } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { registerUser } from '@/store/slices/authSlice';
 
-const RegisterPage = () => {
-
+export default function RegisterPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { loading, error: apiError } = useAppSelector((state) => state.auth);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [agree, setAgree] = useState(false);
   const [formError, setFormError] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFormError('');
-
     if (password !== confirmPassword) {
       setFormError('Passwords do not match.');
       return;
     }
-
     try {
-      const result = await dispatch(
-        registerUser({ name, email, password })
-      );
+      const result = await dispatch(registerUser({ name, email, password }));
       if (registerUser.fulfilled.match(result)) {
         router.push('/auth/login');
       }
-    } catch (err: any) {
-      setFormError(err.message || 'An error occurred. Please try again.');
+    } catch (err: unknown) {
+      if (err instanceof Error) setFormError(err.message);
+      else setFormError('An error occurred. Please try again.');
     }
   };
 
   const getApiErrorMessage = () => {
     if (!apiError) return null;
-    if (apiError.includes('400')) {
-      return 'Registration failed: Email already exist.';
-    }
+    if (apiError.includes('400')) return 'Registration failed: Email already exists.';
     return apiError;
   };
 
@@ -59,17 +57,16 @@ const RegisterPage = () => {
             src="/register-bg.jpg"
             alt="Register background"
             fill
-            priority          
+            priority
             sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
           />
         </div>
-
         <div className="flex-1 flex items-center justify-center p-8 bg-gray-100">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">
-            <div className="flex items-center justify-center mb-6">
-              <h1 className="text-4xl font-extrabold ml-2 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">Rentify</h1>
-            </div>
+            <h1 className="text-4xl font-extrabold text-center mb-6 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
+              Rentify
+            </h1>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
@@ -79,9 +76,9 @@ const RegisterPage = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-2 block h-7 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   placeholder="John Doe"
                   required
+                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                 />
               </div>
               <div>
@@ -92,36 +89,53 @@ const RegisterPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-2 block h-7 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   placeholder="email@example.com"
                   required
+                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                 />
               </div>
-              <div>
+              <div className="relative">
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Lock className="mr-2 text-indigo-500" size={18} /> Password
                 </label>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="mt-2 block h-7 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   placeholder="********"
                   required
+                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm pr-10 focus:border-purple-500 focus:ring-purple-500"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
-              <div>
+  
+              <div className="relative">
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Lock className="mr-2 text-indigo-500" size={18} /> Confirm Password
                 </label>
                 <input
-                  type="password"
+                  type={showConfirm ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="mt-2 block h-7 w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   placeholder="********"
                   required
+                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm pr-10 focus:border-purple-500 focus:ring-purple-500"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                  aria-label="Toggle confirm password visibility"
+                >
+                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
               <div className="flex items-center">
                 <input
@@ -132,16 +146,17 @@ const RegisterPage = () => {
                   placeholder='I agree to the Terms & Conditions'
                 />
                 <label className="ml-2 text-sm text-gray-600">
-                  I agree to the <a href="/terms" className="font-medium text-purple-600 underline">Terms & Conditions</a>
+                  I agree to the{' '}
+                  <Link href="/terms" className="font-medium text-purple-600 underline">
+                  Terms &amp; Conditions
+                  </Link>
                 </label>
               </div>
-
-              {formError ? (
-                <p className="text-red-500 text-sm">{formError}</p>
-              ) : (
-                getApiErrorMessage() && <p className="text-red-500 text-sm">{getApiErrorMessage()}</p>
+    
+              {(formError || getApiErrorMessage()) && (
+                <p className="text-red-500 text-sm">{formError || getApiErrorMessage()}</p>
               )}
-
+          
               <button
                 type="submit"
                 disabled={!agree || loading}
@@ -149,14 +164,12 @@ const RegisterPage = () => {
               >
                 {loading ? 'Registering…' : 'Create Account'}
               </button>
+           
               <p className="text-sm text-gray-600 text-center">
                 Already have an account?{' '}
-                <a
-                  href="/auth/login"
-                  className="text-blue-600 hover:underline font-medium"
-                >
-                  Login 
-                </a>
+                <Link href="/auth/login" className="text-purple-600 hover:underline font-medium">
+                Login
+                </Link>
               </p>
             </form>
           </div>
@@ -164,6 +177,4 @@ const RegisterPage = () => {
       </div>
     </>
   );
-};
-
-export default RegisterPage;
+}
