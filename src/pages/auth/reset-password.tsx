@@ -3,10 +3,8 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Mail } from 'lucide-react';
-import { useRouter } from 'next/router';
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,8 +30,12 @@ export default function ForgotPasswordPage() {
         throw new Error(data.error || 'Request failed.');
       }
       setMessage('If an account with that email exists, you will receive a password reset link shortly.');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -47,7 +49,7 @@ export default function ForgotPasswordPage() {
       </Head>
       <div className="min-h-screen flex flex-col lg:flex-row">
         <div className="hidden lg:block lg:w-1/2 relative">
-        <Image
+          <Image
             src="/forgot_bg.jpg"
             alt="Forgot password illustration"
             fill
@@ -60,7 +62,7 @@ export default function ForgotPasswordPage() {
         <div className="flex-1 flex items-center justify-center bg-gray-100 p-8">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">
             <div className="flex items-center justify-center mb-6">
-              <h1 className="text-4xl font-extrabold ml-2 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
+              <h1 className="text-4xl font-extrabold text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
                 Rentify
               </h1>
             </div>
@@ -68,7 +70,7 @@ export default function ForgotPasswordPage() {
               Forgot your password?
             </h2>
             <p className="text-sm text-gray-600 mb-6 text-center">
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we&apos;ll send you a link to reset your password.
             </p>
 
             {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
@@ -101,14 +103,14 @@ export default function ForgotPasswordPage() {
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600">
                 Remembered your password?{' '}
-                <Link href="/auth/login" className="text-purple-600 hover:underline font-medium">
-                 Login
+                <Link href="/auth/login"className="text-purple-600 hover:underline font-medium">
+                    Login
                 </Link>
               </p>
               <p className="text-sm text-gray-600">
-                Don’t have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link href="/auth/register" className="text-purple-600 hover:underline font-medium">
-                Sign up
+                    Sign up
                 </Link>
               </p>
             </div>
