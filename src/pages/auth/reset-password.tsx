@@ -1,50 +1,57 @@
 import { useState, FormEvent } from 'react';
 import Head from 'next/head';
-import Image from 'next/image';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Mail } from 'lucide-react';
 import { useRouter } from 'next/router';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { loginUser } from '@/store/slices/authSlice';
-import { Mail, Lock } from 'lucide-react';
 
-export default function LoginPage() {
-  const dispatch = useAppDispatch();
+export default function ForgotPasswordPage() {
   const router = useRouter();
-  const { loading, error } = useAppSelector((state) => state.auth);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [formError, setFormError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
-  const handleLogin = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setFormError('');
-    if (!email || !password) {
-      setFormError('Please enter both email and password.');
+    setError('');
+    setMessage('');
+    if (!email) {
+      setError('Please enter your email address.');
       return;
     }
-    
+    setLoading(true);
     try {
-      await dispatch(loginUser({ email, password })).unwrap();
-      router.push('/');
-    } catch(err:any) {
-      setFormError(err.message || 'Login failed. Please try again.');
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Request failed.');
+      }
+      setMessage('If an account with that email exists, you will receive a password reset link shortly.');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <>
       <Head>
-        <title>Login | Rentify</title>
-        <meta name="description" content="Login to your Rentify account to manage your rentals." />
+        <title>Forgot Password | Rentify</title>
+        <meta name="description" content="Reset your Rentify account password." />
       </Head>
       <div className="min-h-screen flex flex-col lg:flex-row">
-
         <div className="hidden lg:block lg:w-1/2 relative">
         <Image
-            src="/login_bg.jpg"
-            alt="Login background"
+            src="/forgot_bg.jpg"
+            alt="Forgot password illustration"
             fill
-            priority          
+            priority
             sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
           />
@@ -53,20 +60,21 @@ export default function LoginPage() {
         <div className="flex-1 flex items-center justify-center bg-gray-100 p-8">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">
             <div className="flex items-center justify-center mb-6">
-
               <h1 className="text-4xl font-extrabold ml-2 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
                 Rentify
               </h1>
             </div>
             <h2 className="text-2xl font-semibold text-gray-700 mb-4 text-center">
-              Welcome back!
+              Forgot your password?
             </h2>
-            {formError ? (
-              <p className="text-red-500 text-sm mb-4 text-center">{formError}</p>
-            ) : (
-              error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
-            )}
-            <form onSubmit={handleLogin} className="space-y-6">
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+
+            {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
+            {message && <p className="text-green-600 text-sm mb-4 text-center">{message}</p>}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Mail className="mr-2 text-indigo-500" size={18} /> Email Address
@@ -80,31 +88,21 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                 />
               </div>
-              <div>
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <Lock className="mr-2 text-indigo-500" size={18} /> Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                  placeholder="********"
-                />
-              </div>
+
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-600 disabled:opacity-50 transition-all"
               >
-                {loading ? 'Logging in…' : 'Login'}
+                {loading ? 'Sending...' : 'Send Reset Link'}
               </button>
             </form>
+
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600">
-                <Link href="/auth/reset-password" className="text-purple-600 hover:underline">
-                Forgot your password?
+                Remembered your password?{' '}
+                <Link href="/auth/login" className="text-purple-600 hover:underline font-medium">
+                 Login
                 </Link>
               </p>
               <p className="text-sm text-gray-600">
