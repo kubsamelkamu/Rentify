@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,6 +20,10 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [agree, setAgree] = useState(false);
   const [formError, setFormError] = useState('');
+
+  useEffect(() => {
+    dispatch({ type: 'auth/clearError' });
+  }, [dispatch]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
