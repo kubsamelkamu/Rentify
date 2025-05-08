@@ -5,14 +5,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loginUser } from '@/store/slices/authSlice';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { loading, error } = useAppSelector((state) => state.auth);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
 
   const handleLogin = async (e: FormEvent) => {
@@ -22,12 +24,13 @@ export default function LoginPage() {
       setFormError('Please enter both email and password.');
       return;
     }
-    
+
     try {
       await dispatch(loginUser({ email, password })).unwrap();
       router.push('/');
-    } catch(err:any) {
-      setFormError(err.message || 'Login failed. Please try again.');
+    } catch (err: unknown) {
+      if (err instanceof Error) setFormError(err.message);
+      else setFormError('Login failed. Please try again.');
     }
   };
 
@@ -38,13 +41,13 @@ export default function LoginPage() {
         <meta name="description" content="Login to your Rentify account to manage your rentals." />
       </Head>
       <div className="min-h-screen flex flex-col lg:flex-row">
-
+        
         <div className="hidden lg:block lg:w-1/2 relative">
-        <Image
+          <Image
             src="/login_bg.jpg"
             alt="Login background"
             fill
-            priority          
+            priority
             sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
           />
@@ -53,18 +56,15 @@ export default function LoginPage() {
         <div className="flex-1 flex items-center justify-center bg-gray-100 p-8">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">
             <div className="flex items-center justify-center mb-6">
-
-              <h1 className="text-4xl font-extrabold ml-2 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
+              <h1 className="text-4xl font-extrabold text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
                 Rentify
               </h1>
             </div>
             <h2 className="text-2xl font-semibold text-gray-700 mb-4 text-center">
               Welcome back!
             </h2>
-            {formError ? (
-              <p className="text-red-500 text-sm mb-4 text-center">{formError}</p>
-            ) : (
-              error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+            {(formError || error) && (
+              <p className="text-red-500 text-sm mb-4 text-center">{formError || error}</p>
             )}
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
@@ -80,19 +80,29 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                 />
               </div>
-              <div>
+
+              <div className="relative">
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Lock className="mr-2 text-indigo-500" size={18} /> Password
                 </label>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                  className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm pr-10 focus:border-purple-500 focus:ring-purple-500"
                   placeholder="********"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
+
               <button
                 type="submit"
                 disabled={loading}
@@ -103,12 +113,12 @@ export default function LoginPage() {
             </form>
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600">
-                <Link href="/auth/reset-password" className="text-purple-600 hover:underline">
+                <Link href="/auth/reset-password" className="text-purple-600 hover:underline font-medium">
                 Forgot your password?
                 </Link>
               </p>
               <p className="text-sm text-gray-600">
-                Don’t have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link href="/auth/register" className="text-purple-600 hover:underline font-medium">
                 Sign up
                 </Link>
