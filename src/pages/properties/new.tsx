@@ -1,7 +1,8 @@
 import { NextPage } from 'next';
 import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { BedDouble, Bath, Image as ImageIcon, Home, MapPin, Tag } from 'lucide-react';
+import { BedDouble, Bath, Home, MapPin, Tag, ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { createProperty, Property } from '../../store/slices/propertySlice';
 import api from '@/utils/api';
@@ -210,13 +211,20 @@ const NewPropertyPage: NextPage = () => {
             {files.length >= 2 && (
               <p className="text-sm text-gray-500 mt-1">Maximum of 2 images uploaded.</p>
             )}
-            {previews.length > 0 &&  (
-              <div className="mt-2 grid grid-cols-4 gap-2">
-                {previews.map((src, idx) => (
-                  <img key={idx} src={src} alt={`Preview ${idx + 1}`} className="h-24 w-full object-cover rounded-lg" />
-                ))}
-              </div>
-            )}
+              {previews.length > 0 && (
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {previews.map((src, idx) => (
+                    <div key={idx} className="relative w-full h-24 rounded-lg overflow-hidden">
+                      <Image
+                        src={src}
+                        alt={`Preview ${idx + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
           </div>
           
           {error && <p className="text-red-500 text-sm">{error}</p>}
