@@ -17,7 +17,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
 
-  // Clear stale errors on mount
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
@@ -31,7 +30,7 @@ export default function LoginPage() {
     }
     try {
       await dispatch(loginUser({ email, password })).unwrap();
-      router.push('/');
+      router.push(`/properties`);
     } catch (err: unknown) {
       if (err instanceof Error) setFormError(err.message);
       else setFormError('Login failed. Please try again.');
@@ -45,7 +44,6 @@ export default function LoginPage() {
         <meta name="description" content="Login to your Rentify account to manage your rentals." />
       </Head>
       <div className="min-h-screen flex flex-col lg:flex-row">
-        {/* Illustrative side */}
         <div className="hidden lg:block lg:w-1/2 relative">
           <Image
             src="/login_bg.jpg"
@@ -56,7 +54,6 @@ export default function LoginPage() {
             className="object-cover"
           />
         </div>
-        {/* Form side */}
         <div className="flex-1 flex items-center justify-center bg-gray-100 p-8">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">
             <h1 className="text-4xl font-extrabold text-center mb-6 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
@@ -69,7 +66,6 @@ export default function LoginPage() {
             )}
 
             <form onSubmit={handleLogin} className="space-y-6">
-              {/* Email */}
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Mail className="mr-2 text-indigo-500" size={18} /> Email Address
@@ -83,7 +79,6 @@ export default function LoginPage() {
                   className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                 />
               </div>
-              {/* Password with toggle */}
               <div className="relative">
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Lock className="mr-2 text-indigo-500" size={18} /> Password
