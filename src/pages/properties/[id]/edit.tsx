@@ -276,18 +276,21 @@ const EditPropertyPage: NextPage = () => {
                 Maximum 2 images allowed.
               </p>
             )}
+            
             {previews.length > 0 && (
-              <div className="mt-2 grid grid-cols-4 gap-2">
-                {previews.map((src, idx) => (
-                  <img
-                    key={idx}
-                    src={src}
-                    alt={`Preview ${idx + 1}`}
-                    className="h-24 w-full object-cover rounded-lg"
-                  />
-                ))}
-              </div>
-            )}
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {previews.map((src, idx) => (
+                    <div key={idx} className="relative w-full h-24 rounded-lg overflow-hidden">
+                      <Image
+                        src={src}
+                        alt={`Preview ${idx + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
           </div>
 
           {error && (
