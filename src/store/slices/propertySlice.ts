@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import axios from 'axios';
 import api from '@/utils/api';
 
 export interface PropertyImage {
@@ -20,7 +21,7 @@ export interface Property {
   propertyType: string;
   amenities: string[];
   landlord?: { id: string; name: string; email: string };
-  images?: PropertyImage[];      
+  images?: PropertyImage[];
   createdAt: string;
 }
 
@@ -38,6 +39,8 @@ const initialState: PropertyState = {
   error: null,
 };
 
+// --- Async Thunks ---
+
 export const fetchProperties = createAsyncThunk<
   Property[],
   void,
@@ -46,8 +49,14 @@ export const fetchProperties = createAsyncThunk<
   try {
     const response = await api.get('/api/properties');
     return response.data as Property[];
-  } catch (err: any) {
-    return rejectWithValue(err.response?.data?.error || err.message);
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      return rejectWithValue(err.response?.data?.error || err.message);
+    }
+    if (err instanceof Error) {
+      return rejectWithValue(err.message);
+    }
+    return rejectWithValue('An unknown error occurred while fetching properties.');
   }
 });
 
@@ -59,8 +68,14 @@ export const fetchPropertyById = createAsyncThunk<
   try {
     const response = await api.get(`/api/properties/${id}`);
     return response.data as Property;
-  } catch (err: any) {
-    return rejectWithValue(err.response?.data?.error || err.message);
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      return rejectWithValue(err.response?.data?.error || err.message);
+    }
+    if (err instanceof Error) {
+      return rejectWithValue(err.message);
+    }
+    return rejectWithValue('An unknown error occurred while fetching property.');
   }
 });
 
@@ -72,8 +87,14 @@ export const createProperty = createAsyncThunk<
   try {
     const response = await api.post('/api/properties', newData);
     return response.data as Property;
-  } catch (err: any) {
-    return rejectWithValue(err.response?.data?.error || err.message);
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      return rejectWithValue(err.response?.data?.error || err.message);
+    }
+    if (err instanceof Error) {
+      return rejectWithValue(err.message);
+    }
+    return rejectWithValue('An unknown error occurred while creating property.');
   }
 });
 
@@ -81,17 +102,20 @@ export const updateProperty = createAsyncThunk<
   Property,
   { id: string; data: Partial<Omit<Property, 'id' | 'landlord' | 'images'>> },
   { rejectValue: string }
->(
-  'properties/update',
-  async ({ id, data }, { rejectWithValue }) => {
-    try {
-      const response = await api.put(`/api/properties/${id}`, data);
-      return response.data as Property;
-    } catch (err: any) {
+>('properties/update', async ({ id, data }, { rejectWithValue }) => {
+  try {
+    const response = await api.put(`/api/properties/${id}`, data);
+    return response.data as Property;
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
       return rejectWithValue(err.response?.data?.error || err.message);
     }
+    if (err instanceof Error) {
+      return rejectWithValue(err.message);
+    }
+    return rejectWithValue('An unknown error occurred while updating property.');
   }
-);
+});
 
 export const deleteProperty = createAsyncThunk<
   string,
@@ -101,10 +125,18 @@ export const deleteProperty = createAsyncThunk<
   try {
     await api.delete(`/api/properties/${id}`);
     return id;
-  } catch (err: any) {
-    return rejectWithValue(err.response?.data?.error || err.message);
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      return rejectWithValue(err.response?.data?.error || err.message);
+    }
+    if (err instanceof Error) {
+      return rejectWithValue(err.message);
+    }
+    return rejectWithValue('An unknown error occurred while deleting property.');
   }
 });
+
+// --- Slice ---
 
 const propertySlice = createSlice({
   name: 'properties',
@@ -116,13 +148,10 @@ const propertySlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        fetchProperties.fulfilled,
-        (state, action: PayloadAction<Property[]>) => {
-          state.loading = false;
-          state.items = action.payload;
-        }
-      )
+      .addCase(fetchProperties.fulfilled, (state, action: PayloadAction<Property[]>) => {
+        state.loading = false;
+        state.items = action.payload;
+      })
       .addCase(fetchProperties.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? 'Failed to fetch properties';
@@ -132,64 +161,52 @@ const propertySlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        fetchPropertyById.fulfilled,
-        (state, action: PayloadAction<Property>) => {
-          state.loading = false;
-          state.current = action.payload;
-        }
-      )
+      .addCase(fetchPropertyById.fulfilled, (state, action: PayloadAction<Property>) => {
+        state.loading = false;
+        state.current = action.payload;
+      })
       .addCase(fetchPropertyById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? 'Failed to fetch property';
       })
+
       .addCase(createProperty.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        createProperty.fulfilled,
-        (state, action: PayloadAction<Property>) => {
-          state.loading = false;
-          state.items.unshift(action.payload);
-        }
-      )
+      .addCase(createProperty.fulfilled, (state, action: PayloadAction<Property>) => {
+        state.loading = false;
+        state.items.unshift(action.payload);
+      })
       .addCase(createProperty.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? 'Failed to create property';
       })
+
       .addCase(updateProperty.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        updateProperty.fulfilled,
-        (state, action: PayloadAction<Property>) => {
-          state.loading = false;
-          const idx = state.items.findIndex(
-            (p) => p.id === action.payload.id
-          );
-          if (idx !== -1) state.items[idx] = action.payload;
-          if (state.current?.id === action.payload.id)
-            state.current = action.payload;
-        }
-      )
+      .addCase(updateProperty.fulfilled, (state, action: PayloadAction<Property>) => {
+        state.loading = false;
+        const idx = state.items.findIndex((p) => p.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
+        if (state.current?.id === action.payload.id) state.current = action.payload;
+      })
       .addCase(updateProperty.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? 'Failed to update property';
       })
+
       .addCase(deleteProperty.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        deleteProperty.fulfilled,
-        (state, action: PayloadAction<string>) => {
-          state.loading = false;
-          state.items = state.items.filter((p) => p.id !== action.payload);
-          if (state.current?.id === action.payload) state.current = undefined;
-        }
-      )
+      .addCase(deleteProperty.fulfilled, (state, action: PayloadAction<string>) => {
+        state.loading = false;
+        state.items = state.items.filter((p) => p.id !== action.payload);
+        if (state.current?.id === action.payload) state.current = undefined;
+      })
       .addCase(deleteProperty.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? 'Failed to delete property';
