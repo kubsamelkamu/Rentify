@@ -81,6 +81,7 @@ const PropertiesListPage: NextPage = () => {
                       alt={prop.images[0].fileName}
                       layout="fill"
                       objectFit="cover"
+                      sizes="(max-width: 640px) 100vw, 33vw"
                       className="transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
