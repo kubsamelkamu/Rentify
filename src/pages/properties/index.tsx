@@ -1,94 +1,120 @@
-import { NextPage} from 'next';
+import { NextPage } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProperties } from '@/store/slices/propertySlice';
+import FilterPanel, { PropertyFilters } from './FilterPanel';
 
 const PropertiesListPage: NextPage = () => {
   const dispatch = useAppDispatch();
-  const { items, loading, error } = useAppSelector((state) => state.properties);
-  const [filtered, setFiltered] = useState(items);
+  const { items, loading, error } = useAppSelector((s) => s.properties);
+
+  const [filters, setFilters] = useState<PropertyFilters>({});
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  const [cityTyping, setCityTyping] = useState('');
 
   useEffect(() => {
-    dispatch(fetchProperties());
-  }, [dispatch]);
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, city: cityTyping || undefined }));
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [cityTyping]);
 
   useEffect(() => {
-    setFiltered(items);
-  }, [items]);
+    dispatch(fetchProperties({ ...filters, page, limit }));
+  }, [dispatch, filters, page]);
+
+  const hasNextPage = items.length === limit;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, idx) => (
-            <div
-              key={idx}
-              className="animate-pulse bg-white h-64 rounded-2xl"
-            />
-          ))}
-        </div>
-      )}
+    <div className="min-h-screen bg-gray-50 py-12 px-6">
+      <div className="max-w-7xl mx-auto">
 
-      {error && (
-        <p className="text-red-600 text-center mt-6">{error}</p>
-      )}
+        <FilterPanel
+          initial={filters}
+          onCityChange={setCityTyping}
+          onApply={(f) => { setFilters(f); setPage(1); }}
+          onReset={() => { setFilters({}); setCityTyping(''); setPage(1); }}
+        />
 
-      {!loading && !error && filtered.length === 0 && (
-        <p className="text-center text-gray-600 mt-12">
-          No properties found. 
-        </p>
-      )}
-
-      {!loading && !error && filtered.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((prop) => (
-            <Link
-              key={prop.id}
-              href={`/properties/${prop.id}`}
-              className="group block bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition"
-            >
-              <div className="relative h-48 w-full bg-gray-200">
-                {prop.images && prop.images.length > 0 ? (
-                  <Image
-                    src={prop.images[0].url}
-                    alt={prop.images[0].fileName}
-                    layout="fill"
-                    objectFit="cover"
-                    className="group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                    No Image
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(limit)].map((_, i) => (
+              <div key={i} className="animate-pulse h-80 bg-white rounded-2xl shadow" />
+            ))}
+          </div>
+        ) : error ? (
+          <p className="text-red-600 text-center mt-12">{error}</p>
+        ) : items.length === 0 ? (
+          <p className="text-gray-600 text-center mt-12">
+            No properties found. Try adjusting your filters.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {items.map((prop) => (
+              <Link
+                key={prop.id}
+                href={`/properties/${prop.id}`}
+                className="block bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition transform hover:-translate-y-1 duration-200"
+              >
+                <div className="relative h-60 w-full bg-gray-200">
+                  {prop.images && prop.images.length > 0 ? (
+                    <Image
+                      src={prop.images[0].url}
+                      alt={prop.images[0].fileName}
+                      layout="fill"
+                      objectFit="cover"
+                      className="transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-400">
+                      No Image
+                    </div>
+                  )}
+                </div>
+                <div className="p-6">
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-1">
+                    {prop.title}
+                  </h2>
+                  <p className="text-gray-500 mb-3">{prop.city}</p>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xl font-bold text-gray-900">
+                      Birr {prop.rentPerMonth}/mo
+                    </span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                      {prop.propertyType}
+                    </span>
                   </div>
-                )}
-              </div>
-              <div className="p-6">
-                <h2 className="text-2xl font-semibold text-gray-800 group-hover:text-blue-600 transition">
-                  {prop.title}
-                </h2>
-                <p className="text-gray-500 truncate">{prop.city}</p>
-
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-xl font-bold text-gray-900">
-                    ${prop.rentPerMonth}/mo
-                  </span>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                    {prop.propertyType}
-                  </span>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span>{prop.numBedrooms} bd</span>
+                    <span className="mx-2">·</span>
+                    <span>{prop.numBathrooms} ba</span>
+                  </div>
                 </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
-                <div className="mt-3 flex space-x-2 text-sm text-gray-600">
-                  <span>{prop.numBedrooms} Bed</span>
-                  <span>·</span>
-                  <span>{prop.numBathrooms} Bath</span>
-                </div>
-              </div>
-            </Link>
-          ))}
+        <div className="mt-10 flex justify-center space-x-2">
+          <button
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-white border rounded-full shadow hover:bg-gray-100 disabled:opacity-50"
+          >Prev</button>
+          <span className="font-medium text-gray-700">Page {page}</span>
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            disabled={!hasNextPage}
+            className="px-4 py-2 bg-white border rounded-full shadow hover:bg-gray-100 disabled:opacity-50"
+          >Next</button>
         </div>
-      )}
+
+      </div>
     </div>
   );
 };
