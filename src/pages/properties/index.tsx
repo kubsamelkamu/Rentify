@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProperties } from '@/store/slices/propertySlice';
 import FilterPanel, { PropertyFilters } from './FilterPanel';
+import { motion } from 'framer-motion'; 
 
 const PropertiesListPage: NextPage = () => {
   const dispatch = useAppDispatch();
@@ -13,7 +14,6 @@ const PropertiesListPage: NextPage = () => {
   const [filters, setFilters] = useState<PropertyFilters>({});
   const [page, setPage] = useState(1);
   const limit = 10;
-
   const [cityTyping, setCityTyping] = useState('');
 
   useEffect(() => {
@@ -50,9 +50,22 @@ const PropertiesListPage: NextPage = () => {
         ) : error ? (
           <p className="text-red-600 text-center mt-12">{error}</p>
         ) : items.length === 0 ? (
-          <p className="text-gray-600 text-center mt-12">
-            No properties found. Try adjusting your filters.
-          </p>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col items-center justify-center mt-16"
+          >
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              className="text-7xl mb-4"
+            >
+              🏡
+            </motion.div>
+            <h2 className="text-2xl font-bold text-gray-800">No treasures found!</h2>
+            <p className="text-gray-500 mt-2">Tweak your filters or explore a new city — your perfect spot is out there.</p>
+          </motion.div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {items.map((prop) => (
