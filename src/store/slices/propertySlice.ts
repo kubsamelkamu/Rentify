@@ -25,6 +25,18 @@ export interface Property {
   createdAt: string;
 }
 
+export interface FetchPropertiesParams {
+  page?: number;
+  limit?: number;
+  city?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minBedrooms?: number;
+  maxBedrooms?: number;
+  propertyType?: string;
+  amenities?: string[];
+}
+
 interface PropertyState {
   items: Property[];
   current?: Property;
@@ -39,26 +51,41 @@ const initialState: PropertyState = {
   error: null,
 };
 
-// --- Async Thunks ---
-
 export const fetchProperties = createAsyncThunk<
   Property[],
-  void,
+  FetchPropertiesParams,
   { rejectValue: string }
->('properties/fetchAll', async (_, { rejectWithValue }) => {
-  try {
-    const response = await api.get('/api/properties');
-    return response.data as Property[];
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      return rejectWithValue(err.response?.data?.error || err.message);
+>(
+  'properties/fetchAll',
+  async (params, { rejectWithValue }) => {
+    try {
+      const query = new URLSearchParams();
+      if (params.page) query.append('page', params.page.toString());
+      if (params.limit) query.append('limit', params.limit.toString());
+      if (params.city) query.append('city', params.city);
+      if (params.minPrice) query.append('minPrice', params.minPrice.toString());
+      if (params.maxPrice) query.append('maxPrice', params.maxPrice.toString());
+      if (params.minBedrooms) query.append('minBedrooms', params.minBedrooms.toString());
+      if (params.maxBedrooms) query.append('maxBedrooms', params.maxBedrooms.toString());
+      if (params.propertyType) query.append('propertyType', params.propertyType);
+      if (params.amenities) {
+        query.append('amenities', params.amenities.join(','));
+      }
+
+      const response = await api.get(`/api/properties?${query.toString()}`);
+      return response.data.data as Property[];
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        return rejectWithValue(err.response?.data?.error || err.message);
+      }
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+      return rejectWithValue('An unknown error occurred while fetching properties.');
     }
-    if (err instanceof Error) {
-      return rejectWithValue(err.message);
-    }
-    return rejectWithValue('An unknown error occurred while fetching properties.');
   }
-});
+);
+
 
 export const fetchPropertyById = createAsyncThunk<
   Property,
@@ -136,8 +163,6 @@ export const deleteProperty = createAsyncThunk<
   }
 });
 
-// --- Slice ---
-
 const propertySlice = createSlice({
   name: 'properties',
   initialState,
@@ -156,7 +181,6 @@ const propertySlice = createSlice({
         state.loading = false;
         state.error = action.payload ?? 'Failed to fetch properties';
       })
-
       .addCase(fetchPropertyById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -169,7 +193,6 @@ const propertySlice = createSlice({
         state.loading = false;
         state.error = action.payload ?? 'Failed to fetch property';
       })
-
       .addCase(createProperty.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -182,7 +205,6 @@ const propertySlice = createSlice({
         state.loading = false;
         state.error = action.payload ?? 'Failed to create property';
       })
-
       .addCase(updateProperty.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -197,7 +219,6 @@ const propertySlice = createSlice({
         state.loading = false;
         state.error = action.payload ?? 'Failed to update property';
       })
-
       .addCase(deleteProperty.pending, (state) => {
         state.loading = true;
         state.error = null;
