@@ -97,7 +97,7 @@ const PropertyDetailPage: NextPage = () => {
 
             <div className="flex items-center space-x-4 mb-6">
               <span className="text-2xl font-extrabold text-blue-600">
-                ${current.rentPerMonth}/mo
+                Birr {current.rentPerMonth}/mo
               </span>
               <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
                 {current.propertyType}
