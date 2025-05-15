@@ -39,6 +39,7 @@ export function FAQItem({ question, children }: FAQItemProps) {
 }
 
 export default function Footer() {
+
   const themeContext = useContext(ThemeContext)!;
   const { theme, toggleTheme } = themeContext;
 
@@ -64,7 +65,7 @@ export default function Footer() {
         <div className="md:col-span-1">
           <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
           <ul className="space-y-2">
-            {['About','properties', 'bookings', 'messages', 'terms&conditions'].map(key => (
+            {['about','properties', 'bookings', 'messages', 'terms&conditions'].map(key => (
               <li key={key}>
                 <Link
                   href={`/${key}`}
