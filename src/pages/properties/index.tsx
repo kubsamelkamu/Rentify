@@ -10,6 +10,7 @@ import UserLayout from '@/components/userLayout/Layout';
 import { ThemeContext } from '@/components/context/ThemeContext';
 
 const PropertiesListPage: NextPage = () => {
+  
   const dispatch = useAppDispatch();
   const { items, loading, error } = useAppSelector((s) => s.properties);
 
