@@ -18,6 +18,7 @@ interface SubItem {
 }
 
 const navItems: NavItem[] = [
+  { label: 'About', href: '/about' },
   {
     label: 'Properties',
     subItems: [
@@ -30,14 +31,12 @@ const navItems: NavItem[] = [
 ];
 
 export default function Header() {
-
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedLang, setSelectedLang] = useState('EN');
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   
-  const { theme, toggleTheme } =   useContext(ThemeContext)!;
-
+  const { theme, toggleTheme } = useContext(ThemeContext)!;
   const languages = ['EN', 'AM', 'OR'];
   const memoizedNavItems = useMemo(() => navItems, []);
 
@@ -64,29 +63,38 @@ export default function Header() {
         <nav className="hidden md:flex items-center space-x-6">
           {memoizedNavItems.map((item) => (
             <div key={item.label} className="relative group">
-              <button className="text-md font-medium hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
-                {item.label}
-              </button>
-              {item.subItems && (
-                <div className={`absolute left-0 mt-2 w-48 rounded-lg shadow-xl z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${
-                  theme === 'light'
-                    ? 'bg-white border border-gray-100'
-                    : 'bg-gray-800 border border-gray-700'
-                }`}>
-                  {item.subItems.map((sub) => (
-                    <Link
-                      key={sub.label}
-                      href={sub.href}
-                      className={`block w-full text-left px-4 py-3 text-sm transition-colors ${
-                        theme === 'light'
-                          ? 'hover:bg-gray-50 text-gray-700'
-                          : 'hover:bg-gray-700 text-gray-100'
-                      }`}
-                    >
-                      {sub.label}
-                    </Link>
-                  ))}
-                </div>
+              {item.subItems ? (
+                <>
+                  <button className="text-md font-medium hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
+                    {item.label}
+                  </button>
+                  <div className={`absolute left-0 mt-2 w-48 rounded-lg shadow-xl z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${
+                    theme === 'light'
+                      ? 'bg-white border border-gray-100'
+                      : 'bg-gray-800 border border-gray-700'
+                  }`}>
+                    {item.subItems.map((sub) => (
+                      <Link
+                        key={sub.label}
+                        href={sub.href}
+                        className={`block w-full text-left px-4 py-3 text-sm transition-colors ${
+                          theme === 'light'
+                            ? 'hover:bg-gray-50 text-gray-700'
+                            : 'hover:bg-gray-700 text-gray-100'
+                        }`}
+                      >
+                        {sub.label}
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <Link
+                  href={item.href!}
+                  className="text-md font-medium hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  {item.label}
+                </Link>
               )}
             </div>
           ))}
@@ -142,7 +150,7 @@ export default function Header() {
             <div className="relative group">
               <img
                 className="h-8 w-8 rounded-full cursor-pointer ring-2 ring-blue-500"
-                src={ '/avatar.jpg'}
+                src={'/avatar.jpg'}
                 alt={`${user.name}'s avatar`}
               />
               <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-top">
@@ -191,7 +199,7 @@ export default function Header() {
             {theme === 'dark' ? (
               <>
                 <SunIcon className="w-5 h-5 mr-2" />
-                 Light Mode
+                Light Mode
               </>
             ) : (
               <>
