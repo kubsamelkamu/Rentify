@@ -5,6 +5,7 @@ import { useContext } from 'react';
 import { ThemeContext } from '@/components/context/ThemeContext';
 
 export default function TermsPage() {
+  
   const { theme } = useContext(ThemeContext)!;
 
   return (
