@@ -22,7 +22,7 @@ const navItems: NavItem[] = [
     label: 'Properties',
     subItems: [
       { label: 'List Property', href: '/properties/list' },
-      { label: 'Rent Property', href: '/properties/rent' },
+      { label: 'Rent Property', href: '/properties' },
     ],
   },
   { label: 'Bookings', href: '/bookings' },
