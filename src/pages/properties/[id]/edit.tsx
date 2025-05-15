@@ -1,21 +1,23 @@
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
-import {useEffect,useState,FormEvent,ChangeEvent} from 'react';
-import {BedDouble,Bath,Image as ImageIcon,Home,MapPin,Tag} from 'lucide-react';
+import { useEffect, useState, FormEvent, ChangeEvent, useContext } from 'react';
+import { BedDouble, Bath, ImageIcon, Home, MapPin, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {fetchPropertyById,updateProperty,} from '@/store/slices/propertySlice';
+import { fetchPropertyById, updateProperty } from '@/store/slices/propertySlice';
 import api from '@/utils/api';
+import UserLayout from '@/components/userLayout/Layout';
+import { ThemeContext } from '@/components/context/ThemeContext';
 
 const EditPropertyPage: NextPage = () => {
-
+  
   const router = useRouter();
   const { id } = router.query as { id?: string };
   const dispatch = useAppDispatch();
-  const { current, loading, error } = useAppSelector(
-    (s) => s.properties
-  );
+  const { current, loading, error } = useAppSelector((s) => s.properties);
+  const themeContext = useContext(ThemeContext)!;
+  const { theme } = themeContext;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -94,193 +96,280 @@ const EditPropertyPage: NextPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-blue-50 to-white py-12 px-6">
-      <div className="max-w-3xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden">
-        <div className="bg-blue-600 py-6 px-8 text-white">
-          <h1 className="text-3xl font-extrabold">Edit Property</h1>
-          <p className="mt-1 opacity-80">Update your listing details</p>
-        </div>
+    <UserLayout>
+      <div className={`min-h-screen py-12 px-6 ${
+        theme === 'dark' 
+          ? 'bg-gradient-to-tr from-gray-900 to-gray-800' 
+          : 'bg-gradient-to-tr from-blue-50 to-white'
+      }`}>
+        <div className={`max-w-3xl mx-auto shadow-2xl rounded-2xl overflow-hidden ${
+          theme === 'dark' 
+            ? 'bg-gray-800 shadow-gray-900' 
+            : 'bg-white'
+        }`}>
+          <div className={`py-6 px-8 ${
+            theme === 'dark' 
+              ? 'bg-blue-800 text-blue-100' 
+              : 'bg-blue-600 text-white'
+          }`}>
+            <h1 className="text-3xl font-extrabold">Edit Property</h1>
+            <p className={`mt-1 ${theme === 'dark' ? 'opacity-90' : 'opacity-80'}`}>
+              Update your listing details
+            </p>
+          </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="p-8 space-y-6"
-        >
-          <div>
-            <label className="flex items-center text-sm font-medium mb-1">
-              <Home className="w-5 h-5 mr-2 text-blue-600" />
-              Title
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className="w-full border border-gray-300 px-4 py-2 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="flex items-center text-sm font-medium mb-1">
-              <ImageIcon className="w-5 h-5 mr-2 text-blue-600" />
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              rows={4}
-              className="w-full border border-gray-300 px-4 py-2 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 resize-none"
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="p-8 space-y-6">
             <div>
-              <label className="flex items-center text-sm font-medium mb-1">
-                <MapPin className="w-5 h-5 mr-2 text-blue-600" />
-                City
+              <label className={`flex items-center text-sm font-medium mb-1 ${
+                theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+              }`}>
+                <Home className={`w-5 h-5 mr-2 ${
+                  theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                }`} />
+                Title
               </label>
               <input
                 type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 required
-                className="w-full border border-gray-300 px-4 py-2 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full px-4 py-2 rounded-lg shadow-sm focus:ring-2 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700 border-gray-600 focus:border-blue-400 focus:ring-blue-400 text-gray-100' 
+                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                }`}
               />
             </div>
+
             <div>
-              <label className="flex items-center text-sm font-medium mb-1">
-                <Tag className="w-5 h-5 mr-2 text-blue-600" />
-                Rent / month
+              <label className={`flex items-center text-sm font-medium mb-1 ${
+                theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+              }`}>
+                <ImageIcon className={`w-5 h-5 mr-2 ${
+                  theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                }`} />
+                Description
               </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-gray-500">
-                  ብር
-                </span>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                rows={4}
+                className={`w-full px-4 py-2 rounded-lg shadow-sm focus:ring-2 resize-none ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700 border-gray-600 focus:border-blue-400 focus:ring-blue-400 text-gray-100' 
+                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                }`}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={`flex items-center text-sm font-medium mb-1 ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  <MapPin className={`w-5 h-5 mr-2 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
+                  City
+                </label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  required
+                  className={`w-full px-4 py-2 rounded-lg shadow-sm focus:ring-2 ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700 border-gray-600 focus:border-blue-400 focus:ring-blue-400 text-gray-100' 
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                  }`}
+                />
+              </div>
+              <div>
+                <label className={`flex items-center text-sm font-medium mb-1 ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  <Tag className={`w-5 h-5 mr-2 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
+                  Rent / month
+                </label>
+                <div className="relative">
+                  <span className={`absolute inset-y-0 left-3 flex items-center ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    ብር
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={rentPerMonth}
+                    onChange={(e) => setRentPerMonth(e.target.value)}
+                    required
+                    className={`w-full px-10 py-2 rounded-lg shadow-sm focus:ring-2 ${
+                      theme === 'dark' 
+                        ? 'bg-gray-700 border-gray-600 focus:border-blue-400 focus:ring-blue-400 text-gray-100' 
+                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                    }`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={`flex items-center text-sm font-medium mb-1 ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  <BedDouble className={`w-5 h-5 mr-2 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
+                  Bedrooms
+                </label>
                 <input
                   type="number"
-                  step="0.01"
-                  value={rentPerMonth}
-                  onChange={(e) => setRentPerMonth(e.target.value)}
+                  min={1}
+                  value={numBedrooms}
+                  onChange={(e) => setNumBedrooms(Number(e.target.value))}
                   required
-                  className="w-full border border-gray-300 px-10 py-2 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className={`w-full px-4 py-2 rounded-lg shadow-sm focus:ring-2 ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700 border-gray-600 focus:border-blue-400 focus:ring-blue-400 text-gray-100' 
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className={`flex items-center text-sm font-medium mb-1 ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  <Bath className={`w-5 h-5 mr-2 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
+                  Bathrooms
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={numBathrooms}
+                  onChange={(e) => setNumBathrooms(Number(e.target.value))}
+                  required
+                  className={`w-full px-4 py-2 rounded-lg shadow-sm focus:ring-2 ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700 border-gray-600 focus:border-blue-400 focus:ring-blue-400 text-gray-100' 
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                  }`}
                 />
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="flex items-center text-sm font-medium mb-1">
-                <BedDouble className="w-5 h-5 mr-2 text-blue-600" />
-                Bedrooms
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={numBedrooms}
-                onChange={(e) => setNumBedrooms(Number(e.target.value))}
-                required
-                className="w-full border border-gray-300 px-4 py-2 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center text-sm font-medium mb-1">
-                <Bath className="w-5 h-5 mr-2 text-blue-600" />
-                Bathrooms
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={numBathrooms}
-                onChange={(e) => setNumBathrooms(Number(e.target.value))}
-                required
-                className="w-full border border-gray-300 px-4 py-2 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Property Type
-              </label>
-              <select
-                value={propertyType}
-                onChange={(e) => setPropertyType(e.target.value)}
-                className="w-full border border-gray-300 px-4 py-2 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="APARTMENT">Apartment</option>
-                <option value="HOUSE">House</option>
-                <option value="STUDIO">Studio</option>
-                <option value="VILLA">Villa</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Amenities
-              </label>
-              <input
-                type="text"
-                value={amenities.join(', ')}
-                onChange={(e) =>
-                  setAmenities(
-                    e
-                      .target.value
-                      .split(',')
-                      .map((a) => a.trim())
-                      .filter(Boolean)
-                  )
-                }
-                className="w-full border border-gray-300 px-4 py-2 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          </div>
-
-          {current?.images?.length ? (
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Existing Images
-              </label>
-              <div className="grid grid-cols-4 gap-2 mb-4">
-                {current.images.map((img) => (
-                  <div
-                    key={img.id}
-                    className="relative w-full h-24 rounded-lg overflow-hidden"
-                  >
-                    <Image
-                      src={img.url}
-                      alt={img.fileName}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  Property Type
+                </label>
+                <select
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                  className={`w-full px-4 py-2 rounded-lg shadow-sm focus:ring-2 ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700 border-gray-600 focus:border-blue-400 focus:ring-blue-400 text-gray-100' 
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                  }`}
+                >
+                  <option value="APARTMENT">Apartment</option>
+                  <option value="HOUSE">House</option>
+                  <option value="STUDIO">Studio</option>
+                  <option value="VILLA">Villa</option>
+                </select>
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  Amenities
+                </label>
+                <input
+                  type="text"
+                  value={amenities.join(', ')}
+                  onChange={(e) =>
+                    setAmenities(
+                      e.target.value
+                        .split(',')
+                        .map((a) => a.trim())
+                        .filter(Boolean)
+                    )
+                  }
+                  className={`w-full px-4 py-2 rounded-lg shadow-sm focus:ring-2 ${
+                    theme === 'dark' 
+                      ? 'bg-gray-700 border-gray-600 focus:border-blue-400 focus:ring-blue-400 text-gray-100' 
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                  }`}
+                />
               </div>
             </div>
-          ) : null}
-          
-          <div>
-            <label className="flex items-center text-sm font-medium mb-1">
-              <ImageIcon className="w-5 h-5 mr-2 text-blue-600" />
-              Add Images
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFilesChange}
-              disabled={files.length >= 2}
-              className="block"
-            />
-            {files.length >= 2 && (
-              <p className="text-sm text-gray-500 mt-1">
-                Maximum 2 images allowed.
-              </p>
-            )}
+
+            {current?.images?.length ? (
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                }`}>
+                  Existing Images
+                </label>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {current.images.map((img) => (
+                    <div
+                      key={img.id}
+                      className={`relative w-full h-24 rounded-lg overflow-hidden ${
+                        theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+                      }`}
+                    >
+                      <Image
+                        src={img.url}
+                        alt={img.fileName}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             
-            {previews.length > 0 && (
+            <div>
+              <label className={`flex items-center text-sm font-medium mb-1 ${
+                theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+              }`}>
+                <ImageIcon className={`w-5 h-5 mr-2 ${
+                  theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                }`} />
+                Add Images
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFilesChange}
+                disabled={files.length >= 2}
+                className={`block ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+              />
+              {files.length >= 2 && (
+                <p className={`text-sm mt-1 ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  Maximum 2 images allowed.
+                </p>
+              )}
+              
+              {previews.length > 0 && (
                 <div className="mt-2 grid grid-cols-4 gap-2">
                   {previews.map((src, idx) => (
-                    <div key={idx} className="relative w-full h-24 rounded-lg overflow-hidden">
+                    <div key={idx} className={`relative w-full h-24 rounded-lg overflow-hidden ${
+                      theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+                    }`}>
                       <Image
                         src={src}
                         alt={`Preview ${idx + 1}`}
@@ -291,24 +380,31 @@ const EditPropertyPage: NextPage = () => {
                   ))}
                 </div>
               )}
-          </div>
+            </div>
 
-          {error && (
-            <p className="text-red-500 text-sm">{error}</p>
-          )}
+            {error && (
+              <p className={`text-sm ${theme === 'dark' ? 'text-red-400' : 'text-red-500'}`}>
+                {error}
+              </p>
+            )}
 
-          <motion.button
-            type="submit"
-            disabled={loading}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold shadow-lg disabled:opacity-50"
-          >
-            {loading ? 'Updating…' : 'Update Property'}
-          </motion.button>
-        </form>
+            <motion.button
+              type="submit"
+              disabled={loading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`w-full py-3 rounded-lg font-semibold shadow-lg disabled:opacity-50 ${
+                theme === 'dark' 
+                  ? 'bg-green-700 text-green-100 hover:bg-green-600' 
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+            >
+              {loading ? 'Updating…' : 'Update Property'}
+            </motion.button>
+          </form>
+        </div>
       </div>
-    </div>
+    </UserLayout>
   );
 };
 
