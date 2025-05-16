@@ -182,7 +182,7 @@ export default function AboutPage() {
                   {
                     icon: <Trophy className="w-6 h-6" />,
                     title: "Industry Leadership",
-                    description: "Become East Africa's leading proptech innovator"
+                    description: "Become proptech innovator"
                   }
                 ].map((visionItem, index) => (
                   <div key={index} className="flex items-start gap-4">
