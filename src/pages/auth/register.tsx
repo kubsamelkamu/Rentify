@@ -151,7 +151,7 @@ export default function RegisterPage() {
                 />
                 <label className="ml-2 text-sm text-gray-600">
                   I agree to the{' '}
-                  <Link href="/terms" className="font-medium text-purple-600 underline">
+                  <Link href="/terms&conditions" className="font-medium text-purple-600 underline">
                   Terms &amp; Conditions
                   </Link>
                 </label>

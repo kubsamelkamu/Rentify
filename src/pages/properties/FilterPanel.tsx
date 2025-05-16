@@ -1,4 +1,5 @@
-import { FC, useState, ChangeEvent, FormEvent } from 'react';
+import { FC, useState, ChangeEvent, FormEvent, useContext } from 'react';
+import { ThemeContext } from '@/components/context/ThemeContext';
 
 export interface PropertyFilters {
   city?: string;
@@ -26,6 +27,9 @@ const propertyTypeOptions = [
 ];
 
 const FilterPanel: FC<FilterPanelProps> = ({ initial = {}, onApply, onReset, onCityChange }) => {
+
+  const { theme } =  useContext(ThemeContext)!;
+
   const [city, setCity] = useState(initial.city || '');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [minPrice, setMinPrice] = useState(initial.minPrice?.toString() || '');
@@ -59,9 +63,12 @@ const FilterPanel: FC<FilterPanelProps> = ({ initial = {}, onApply, onReset, onC
     onReset?.();
     onCityChange?.('');
   };
-
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 p-6 rounded-lg shadow mb-6">
+    <div className={`p-6 rounded-lg shadow mb-6 ${
+      theme === 'dark' 
+        ? 'bg-gray-900 border-gray-700 text-gray-100' 
+        : 'bg-gray-50 border-gray-200 text-gray-800'
+    }`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex justify-center">
           <div className="relative w-full max-w-xl">
@@ -74,11 +81,17 @@ const FilterPanel: FC<FilterPanelProps> = ({ initial = {}, onApply, onReset, onC
                 onCityChange?.(v);
               }}
               placeholder="Search by city"
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full px-4 py-2 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full border rounded-full px-4 py-2 pr-12 focus:outline-none focus:ring-2 ${
+                theme === 'dark' 
+                  ? 'bg-gray-800 border-gray-700 focus:ring-blue-500 text-gray-100' 
+                  : 'bg-white border-gray-300 focus:ring-blue-500 text-gray-800'
+              }`}
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500"
+              className={`h-5 w-5 absolute right-4 top-1/2 transform -translate-y-1/2 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -88,102 +101,144 @@ const FilterPanel: FC<FilterPanelProps> = ({ initial = {}, onApply, onReset, onC
             </svg>
           </div>
         </div>
-
         <div className="flex justify-center">
           <button
             type="button"
             onClick={() => setShowAdvanced(v => !v)}
-            className="text-blue-600 dark:text-blue-400 hover:underline"
+            className={`${
+              theme === 'dark' 
+                ? 'text-blue-400 hover:text-blue-300' 
+                : 'text-blue-600 hover:text-blue-700'
+            } underline`}
           >
             {showAdvanced ? 'Hide Filters' : 'Show Filters'}
           </button>
         </div>
-
         {showAdvanced && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Rent</label>
+              <label className={`block text-sm font-medium mb-1 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>Min Rent</label>
               <input
                 type="number"
                 min={1000}
                 value={minPrice}
                 onChange={e => setMinPrice(e.target.value)}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                className={`w-full border rounded px-3 py-2 focus:ring-2 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-800 border-gray-700 focus:ring-blue-500 text-gray-100' 
+                    : 'bg-white border-gray-300 focus:ring-blue-500 text-gray-800'
+                }`}
                 placeholder="Min"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Rent</label>
+              <label className={`block text-sm font-medium mb-1 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>Max Rent</label>
               <input
                 type="number"
                 min={1000}
                 value={maxPrice}
                 onChange={e => setMaxPrice(e.target.value)}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                className={`w-full border rounded px-3 py-2 focus:ring-2 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-800 border-gray-700 focus:ring-blue-500 text-gray-100' 
+                    : 'bg-white border-gray-300 focus:ring-blue-500 text-gray-800'
+                }`}
                 placeholder="Max"
               />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Beds</label>
+              <label className={`block text-sm font-medium mb-1 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>Min Beds</label>
               <input
                 type="number"
                 min={1}
                 value={minBedrooms}
                 onChange={e => setMinBedrooms(e.target.value)}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                className={`w-full border rounded px-3 py-2 focus:ring-2 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-800 border-gray-700 focus:ring-blue-500 text-gray-100' 
+                    : 'bg-white border-gray-300 focus:ring-blue-500 text-gray-800'
+                }`}
                 placeholder="Min"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Beds</label>
+              <label className={`block text-sm font-medium mb-1 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>Max Beds</label>
               <input
                 type="number"
                 min={1}
                 value={maxBedrooms}
                 onChange={e => setMaxBedrooms(e.target.value)}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                className={`w-full border rounded px-3 py-2 focus:ring-2 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-800 border-gray-700 focus:ring-blue-500 text-gray-100' 
+                    : 'bg-white border-gray-300 focus:ring-blue-500 text-gray-800'
+                }`}
                 placeholder="Max"
               />
             </div>
-
             <div className="sm:col-span-2 lg:col-span-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property Type</label>
+              <label className={`block text-sm font-medium mb-1 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>Property Type</label>
               <select
                 value={propertyType}
                 onChange={e => setPropertyType(e.target.value)}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                className={`w-full border rounded px-3 py-2 focus:ring-2 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-800 border-gray-700 focus:ring-blue-500 text-gray-100' 
+                    : 'bg-white border-gray-300 focus:ring-blue-500 text-gray-800'
+                }`}
               >
                 {propertyTypeOptions.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>
-
             <div className="sm:col-span-2 lg:col-span-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amenities</label>
+              <label className={`block text-sm font-medium mb-1 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>Amenities</label>
               <input
                 type="text"
                 value={amenities.join(', ')}
                 onChange={e => setAmenities(e.target.value.split(',').map(a => a.trim()).filter(Boolean))}
                 placeholder="e.g. WiFi, Parking"
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                className={`w-full border rounded px-3 py-2 focus:ring-2 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-800 border-gray-700 focus:ring-blue-500 text-gray-100' 
+                    : 'bg-white border-gray-300 focus:ring-blue-500 text-gray-800'
+                }`}
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Comma-separated</p>
+              <p className={`text-xs mt-1 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>Comma-separated</p>
             </div>
           </div>
         )}
-
         {showAdvanced && (
           <div className="flex justify-end space-x-4">
             <button
               type="button"
               onClick={handleReset}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className={`px-4 py-2 border rounded ${
+                theme === 'dark' 
+                  ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-100' 
+                  : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-800'
+              }`}
             >Reset</button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ${
+                theme === 'dark' ? 'hover:bg-blue-500' : ''
+              }`}
             >Apply</button>
           </div>
         )}
