@@ -1,3 +1,4 @@
+'use client';
 import { NextPage } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -5,17 +6,14 @@ import { useEffect, useState, useContext } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProperties } from '@/store/slices/propertySlice';
 import FilterPanel, { PropertyFilters } from './FilterPanel';
-import { motion } from 'framer-motion'; 
+import { motion } from 'framer-motion';
 import UserLayout from '@/components/userLayout/Layout';
 import { ThemeContext } from '@/components/context/ThemeContext';
 
 const PropertiesListPage: NextPage = () => {
-  
   const dispatch = useAppDispatch();
   const { items, loading, error } = useAppSelector((s) => s.properties);
-
-  const themeContext = useContext(ThemeContext)!;
-  const { theme } = themeContext;
+  const { theme } = useContext(ThemeContext)!;
   const [filters, setFilters] = useState<PropertyFilters>({});
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -38,9 +36,7 @@ const PropertiesListPage: NextPage = () => {
   return (
     <UserLayout>
       <div className={`min-h-screen py-12 px-6 ${
-        theme === 'dark' 
-          ? 'bg-gray-900 text-gray-100' 
-          : 'bg-gray-50 text-gray-800'
+        theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-800'
       }`}>
         <div className="max-w-7xl mx-auto">
           <FilterPanel
@@ -52,22 +48,22 @@ const PropertiesListPage: NextPage = () => {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {[...Array(limit)].map((_, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className={`animate-pulse h-80 rounded-2xl shadow ${
-                    theme === 'dark' 
-                      ? 'bg-gray-800' 
-                      : 'bg-white'
-                  }`} 
+                    theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+                  }`}
                 />
               ))}
             </div>
+
           ) : error ? (
             <p className={`text-center mt-12 ${
               theme === 'dark' ? 'text-red-400' : 'text-red-600'
             }`}>
               {error}
             </p>
+
           ) : items.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -77,7 +73,7 @@ const PropertiesListPage: NextPage = () => {
             >
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
-                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
                 className="text-7xl mb-4"
               >
                 🏡
@@ -93,15 +89,15 @@ const PropertiesListPage: NextPage = () => {
                 Tweak your filters or explore a new city — your perfect spot is out there.
               </p>
             </motion.div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {items.map((prop) => (
-                <Link
+            ) : (
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+               {items.map((prop, idx) => (
+                 <Link
                   key={prop.id}
                   href={`/properties/${prop.id}`}
-                  className={`block rounded-2xl overflow-hidden shadow-lg transition transform hover:-translate-y-1 duration-200 ${
-                    theme === 'dark' 
-                      ? 'bg-gray-800 shadow-gray-800/50 hover:shadow-gray-700/50' 
+                  className={`group block rounded-2xl overflow-hidden shadow-lg transition-transform hover:-translate-y-1 duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-gray-800 shadow-gray-800/50 hover:shadow-gray-700/50'
                       : 'bg-white hover:shadow-2xl'
                   }`}
                 >
@@ -110,10 +106,10 @@ const PropertiesListPage: NextPage = () => {
                       <Image
                         src={prop.images[0].url}
                         alt={prop.images[0].fileName}
-                        layout="fill"
-                        objectFit="cover"
+                        fill
                         sizes="(max-width: 640px) 100vw, 33vw"
-                        className="transition-transform duration-300 group-hover:scale-105"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        priority={idx === 0}  
                       />
                     ) : (
                       <div className={`flex items-center justify-center h-full ${
@@ -139,8 +135,8 @@ const PropertiesListPage: NextPage = () => {
                         Birr {prop.rentPerMonth}/mo
                       </span>
                       <span className={`px-2 py-1 rounded-full text-xs ${
-                        theme === 'dark' 
-                          ? 'bg-blue-900/30 text-blue-400' 
+                        theme === 'dark'
+                          ? 'bg-blue-900/30 text-blue-400'
                           : 'bg-blue-100 text-blue-800'
                       }`}>
                         {prop.propertyType}
@@ -163,8 +159,8 @@ const PropertiesListPage: NextPage = () => {
               onClick={() => setPage((p) => Math.max(p - 1, 1))}
               disabled={page === 1}
               className={`px-4 py-2 border rounded-full shadow ${
-                theme === 'dark' 
-                  ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-100' 
+                theme === 'dark'
+                  ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-100'
                   : 'bg-white border-gray-300 hover:bg-gray-100 text-gray-700'
               } disabled:opacity-50`}
             >
@@ -179,8 +175,8 @@ const PropertiesListPage: NextPage = () => {
               onClick={() => setPage((p) => p + 1)}
               disabled={!hasNextPage}
               className={`px-4 py-2 border rounded-full shadow ${
-                theme === 'dark' 
-                  ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-100' 
+                theme === 'dark'
+                  ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-100'
                   : 'bg-white border-gray-300 hover:bg-gray-100 text-gray-700'
               } disabled:opacity-50`}
             >
