@@ -11,14 +11,10 @@ export interface ChatInputProps {
 
 const TYPING_DEBOUNCE = 500;
 
-const ChatInput: React.FC<ChatInputProps> = ({
-  propertyId,
-  onSend,
-  disabled,
-}) => {
+const ChatInput: React.FC<ChatInputProps> = ({ propertyId, onSend, disabled }) => {
+  
   const [input, setInput] = useState('');
   const authUser = useAppSelector((s) => s.auth.user);
-
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const emitTyping = useCallback(
@@ -42,13 +38,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
     if (!socket.connected || !authUser) return;
     emitTyping(true);
 
-    if (typingTimeout.current) {
-      clearTimeout(typingTimeout.current);
-    }
-    typingTimeout.current = setTimeout(
-      () => emitTyping(false),
-      TYPING_DEBOUNCE
-    );
+    if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    typingTimeout.current = setTimeout(() => emitTyping(false), TYPING_DEBOUNCE);
   };
 
   const handleSend = () => {
@@ -60,9 +51,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     if (!socket.connected || !authUser) return;
     emitTyping(false);
-    if (typingTimeout.current) {
-      clearTimeout(typingTimeout.current);
-    }
+    if (typingTimeout.current) clearTimeout(typingTimeout.current);
   };
 
   useEffect(() => {
@@ -74,7 +63,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         clearTimeout(typingTimeout.current);
       }
     };
-  }, [emitTyping]);
+  }, [emitTyping, authUser]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
