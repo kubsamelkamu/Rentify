@@ -3,7 +3,6 @@ import axios from 'axios';
 import api from '@/utils/api';
 
 export interface Message {
-  read: any;
   id: string;
   content: string;
   createdAt: Date; 
@@ -12,6 +11,7 @@ export interface Message {
     name: string;
   };
   isOptimistic?: boolean;
+  read: boolean; 
 }
 
 export interface PropertyImage {
@@ -23,6 +23,7 @@ export interface PropertyImage {
 }
 
 export interface Property {
+
   id: string;
   title: string;
   description: string;
