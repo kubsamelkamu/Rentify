@@ -11,8 +11,17 @@ import MessageList, { Message } from '@/components/chat/MessageList';
 import ChatInput from '@/components/chat/ChatInput';
 import { ThemeContext } from '@/components/context/ThemeContext';
 
-const PropertyChatPage: React.FC = () => {
+interface RawMessage {
+  id: string;
+  content: string;
+  sender: { id: string; name: string };
+  createdAt?: string | Date | null;
+  sentAt?: string | Date | null;
+  deleted?: boolean | null;
+  editedAt?: string | Date | null;
+}
 
+const PropertyChatPage: React.FC = () => {
   const router = useRouter();
   const propertyId = typeof router.query.id === 'string' ? router.query.id : null;
   const dispatch = useAppDispatch();
@@ -39,21 +48,20 @@ const PropertyChatPage: React.FC = () => {
       .unwrap()
       .then((prop) => {
         if (Array.isArray(prop.messages)) {
-          const normalized: Message[] = prop.messages.map((m: any) => ({
+          const normalized: Message[] = (prop.messages as RawMessage[]).map((m) => ({
             id: m.id,
             content: m.content,
             sender: { id: m.sender.id, name: m.sender.name },
-            createdAt: normalizeDate(m.createdAt),
-            sentAt: m.sentAt != null ? normalizeDate(m.sentAt) : undefined,
+            createdAt: m.createdAt ? normalizeDate(m.createdAt) : new Date().toISOString(),
+            sentAt: m.sentAt ? normalizeDate(m.sentAt) : undefined,
             deleted: m.deleted ?? false,
-            editedAt: m.editedAt != null ? normalizeDate(m.editedAt) : undefined,
+            editedAt: m.editedAt ? normalizeDate(m.editedAt) : undefined,
           }));
           setMessages(normalized);
         }
       });
 
     socket.emit('joinRoom', propertyId);
-
     return () => {
       socket.emit('leaveRoom', propertyId);
       setMessages([]);
@@ -102,7 +110,8 @@ const PropertyChatPage: React.FC = () => {
     const onTyping: ServerToClientEvents['typingStatus'] = ({ userId, isTyping }) => {
       setTypingUsers((prev) => {
         const next = new Set(prev);
-        isTyping ? next.add(userId) : next.delete(userId);
+        if (isTyping) next.add(userId);
+        else next.delete(userId);
         return next;
       });
     };
@@ -122,6 +131,7 @@ const PropertyChatPage: React.FC = () => {
     };
   }, []);
 
+  // Handlers
   const handleSend = useCallback(
     (content: string) => {
       if (!authUser) return toast.error('Login required');
@@ -152,13 +162,9 @@ const PropertyChatPage: React.FC = () => {
   const handleDelete = useCallback(
     (messageId: string) => {
       if (!current?.id) return;
-      socket.emit(
-        'deleteMessage',
-        { propertyId: current.id, messageId },
-        (res) => {
-          if (!res.success) toast.error(res.error || 'Delete failed');
-        }
-      );
+      socket.emit('deleteMessage', { propertyId: current.id, messageId }, (res) => {
+        if (!res.success) toast.error(res.error || 'Delete failed');
+      });
     },
     [current?.id]
   );
@@ -176,17 +182,13 @@ const PropertyChatPage: React.FC = () => {
 
   const handleEditSave = useCallback(() => {
     if (!authUser || !current?.id || !editingMessageId) return;
-    socket.emit(
-      'editMessage',
-      { propertyId: current.id, messageId: editingMessageId, newContent: editText },
-      (res) => {
-        if (!res.success) toast.error(res.error || 'Edit failed');
-        else {
-          setEditingMessageId(null);
-          setEditText('');
-        }
+    socket.emit('editMessage', { propertyId: current.id, messageId: editingMessageId, newContent: editText }, (res) => {
+      if (!res.success) toast.error(res.error || 'Edit failed');
+      else {
+        setEditingMessageId(null);
+        setEditText('');
       }
-    );
+    });
   }, [authUser, current?.id, editingMessageId, editText]);
 
   const handleEditCancel = () => {
@@ -210,8 +212,8 @@ const PropertyChatPage: React.FC = () => {
     <UserLayout>
       <div
         className={`min-h-screen p-6 ${
-          theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-900'
-        }`}
+            theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-900'
+          }`}
       >
         <div className="max-w-4xl mx-auto">
           <Link href={`/properties/${current.id}`} className="text-blue-500 hover:underline">
@@ -221,10 +223,10 @@ const PropertyChatPage: React.FC = () => {
           <div className="flex items-center my-2">
             <span
               className={`h-2 w-2 rounded-full mr-2 ${
-                presence[current.landlord?.id || ''] === 'online'
-                  ? 'bg-green-500'
-                  : 'bg-gray-400'
-              }`}
+                  presence[current.landlord?.id || ''] === 'online'
+                    ? 'bg-green-500'
+                    : 'bg-gray-400'
+                }`}
             />
             <span className="font-semibold">{current.landlord?.name}</span>
           </div>
