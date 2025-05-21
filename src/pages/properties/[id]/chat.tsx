@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import socket from '@/utils/socket';
-import type {ServerToClientEvents,}from '@/utils/socket';
+import type { ServerToClientEvents } from '@/utils/socket';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchPropertyById } from '@/store/slices/propertySlice';
 import UserLayout from '@/components/userLayout/Layout';
@@ -12,7 +12,7 @@ import ChatInput from '@/components/chat/ChatInput';
 import { ThemeContext } from '@/components/context/ThemeContext';
 
 const PropertyChatPage: React.FC = () => {
-  
+
   const router = useRouter();
   const propertyId = typeof router.query.id === 'string' ? router.query.id : null;
   const dispatch = useAppDispatch();
@@ -26,8 +26,15 @@ const PropertyChatPage: React.FC = () => {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>('');
 
+  const normalizeDate = (value: unknown): string => {
+    if (typeof value === 'string') return value;
+    if (value instanceof Date) return value.toISOString();
+    return new Date().toISOString();
+  };
+
   useEffect(() => {
     if (!propertyId) return;
+
     dispatch(fetchPropertyById(propertyId))
       .unwrap()
       .then((prop) => {
@@ -36,29 +43,17 @@ const PropertyChatPage: React.FC = () => {
             id: m.id,
             content: m.content,
             sender: { id: m.sender.id, name: m.sender.name },
-            createdAt:
-              typeof m.createdAt === 'string'
-                ? m.createdAt
-                : m.createdAt?.toISOString() ?? new Date().toISOString(),
-            sentAt:
-              m.sentAt == null
-                ? undefined
-                : typeof m.sentAt === 'string'
-                ? m.sentAt
-                : m.sentAt.toISOString(),
+            createdAt: normalizeDate(m.createdAt),
+            sentAt: m.sentAt != null ? normalizeDate(m.sentAt) : undefined,
             deleted: m.deleted ?? false,
-            editedAt:
-              m.editedAt == null
-                ? undefined
-                : typeof m.editedAt === 'string'
-                ? m.editedAt
-                : m.editedAt.toISOString(),
+            editedAt: m.editedAt != null ? normalizeDate(m.editedAt) : undefined,
           }));
           setMessages(normalized);
         }
       });
 
     socket.emit('joinRoom', propertyId);
+
     return () => {
       socket.emit('leaveRoom', propertyId);
       setMessages([]);
@@ -80,10 +75,11 @@ const PropertyChatPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const onDeleted: ServerToClientEvents['messageDeleted'] = ({ messageId }) =>
+    const onDeleted: ServerToClientEvents['messageDeleted'] = ({ messageId }) => {
       setMessages((prev) =>
         prev.map((m) => (m.id === messageId ? { ...m, deleted: true } : m))
       );
+    };
     socket.on('messageDeleted', onDeleted);
     return () => {
       socket.off('messageDeleted', onDeleted);
@@ -91,10 +87,11 @@ const PropertyChatPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const onEdited: ServerToClientEvents['messageEdited'] = (updated) =>
+    const onEdited: ServerToClientEvents['messageEdited'] = (updated) => {
       setMessages((prev) =>
         prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
       );
+    };
     socket.on('messageEdited', onEdited);
     return () => {
       socket.off('messageEdited', onEdited);
@@ -125,42 +122,59 @@ const PropertyChatPage: React.FC = () => {
     };
   }, []);
 
-  const handleSend = (content: string) => {
-    if (!authUser) return toast.error('Login required');
-    if (!current?.id || !socket.connected) return toast.error('Chat not ready');
+  const handleSend = useCallback(
+    (content: string) => {
+      if (!authUser) return toast.error('Login required');
+      if (!current?.id || !socket.connected) return toast.error('Chat not ready');
 
-    const tempId = `temp-${Date.now()}`;
-    const now = new Date().toISOString();
-    setMessages((prev) => [
-      ...prev,
-      { id: tempId, content, sender: { id: authUser.id, name: authUser.name }, createdAt: now, sentAt: now, deleted: false },
-    ]);
+      const tempId = `temp-${Date.now()}`;
+      const now = new Date().toISOString();
 
-    socket.emit('sendMessage', { propertyId: current.id, content }, () => {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-    });
-  };
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: tempId,
+          content,
+          sender: { id: authUser.id, name: authUser.name },
+          createdAt: now,
+          sentAt: now,
+          deleted: false,
+        },
+      ]);
 
-  const handleDelete = (messageId: string) => {
-    if (!current?.id) return;
-    socket.emit(
-      'deleteMessage',
-      { propertyId: current.id, messageId },
-      (res) => {
-        if (!res.success) toast.error(res.error || 'Delete failed');
+      socket.emit('sendMessage', { propertyId: current.id, content }, () => {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      });
+    },
+    [authUser, current?.id]
+  );
+
+  const handleDelete = useCallback(
+    (messageId: string) => {
+      if (!current?.id) return;
+      socket.emit(
+        'deleteMessage',
+        { propertyId: current.id, messageId },
+        (res) => {
+          if (!res.success) toast.error(res.error || 'Delete failed');
+        }
+      );
+    },
+    [current?.id]
+  );
+
+  const handleEdit = useCallback(
+    (messageId: string) => {
+      const msg = messages.find((m) => m.id === messageId);
+      if (msg) {
+        setEditingMessageId(messageId);
+        setEditText(msg.content);
       }
-    );
-  };
+    },
+    [messages]
+  );
 
-  const handleEdit = (messageId: string) => {
-    const msg = messages.find((m) => m.id === messageId);
-    if (msg) {
-      setEditingMessageId(messageId);
-      setEditText(msg.content);
-    }
-  };
-
-  const handleEditSave = () => {
+  const handleEditSave = useCallback(() => {
     if (!authUser || !current?.id || !editingMessageId) return;
     socket.emit(
       'editMessage',
@@ -173,7 +187,7 @@ const PropertyChatPage: React.FC = () => {
         }
       }
     );
-  };
+  }, [authUser, current?.id, editingMessageId, editText]);
 
   const handleEditCancel = () => {
     setEditingMessageId(null);
@@ -194,13 +208,24 @@ const PropertyChatPage: React.FC = () => {
 
   return (
     <UserLayout>
-      <div className={`min-h-screen p-6 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-900'}`}>
+      <div
+        className={`min-h-screen p-6 ${
+          theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-900'
+        }`}
+      >
         <div className="max-w-4xl mx-auto">
           <Link href={`/properties/${current.id}`} className="text-blue-500 hover:underline">
             ← Back to property
           </Link>
+
           <div className="flex items-center my-2">
-            <span className={`h-2 w-2 rounded-full mr-2 ${presence[current.landlord?.id || ''] === 'online' ? 'bg-green-500' : 'bg-gray-400'}`} />
+            <span
+              className={`h-2 w-2 rounded-full mr-2 ${
+                presence[current.landlord?.id || ''] === 'online'
+                  ? 'bg-green-500'
+                  : 'bg-gray-400'
+              }`}
+            />
             <span className="font-semibold">{current.landlord?.name}</span>
           </div>
 
@@ -216,9 +241,11 @@ const PropertyChatPage: React.FC = () => {
               onEditSave={handleEditSave}
               onEditCancel={handleEditCancel}
             />
+
             {otherTyping.length > 0 && (
               <div className="p-2 italic text-gray-500">Someone is typing…</div>
             )}
+
             <ChatInput
               propertyId={current.id}
               onSend={handleSend}
