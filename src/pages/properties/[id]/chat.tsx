@@ -11,7 +11,7 @@ import ChatInput from '@/components/chat/ChatInput';
 import { ThemeContext } from '@/components/context/ThemeContext';
 
 const PropertyChatPage: React.FC = () => {
-
+  
   const { query: { id } } = useRouter();
   const dispatch = useAppDispatch();
   const { current } = useAppSelector((s) => s.properties);
@@ -26,35 +26,20 @@ const PropertyChatPage: React.FC = () => {
 
   useEffect(() => {
     if (typeof id === 'string') {
-      dispatch(fetchPropertyById(id))
-        .unwrap()
-        .then((prop) => {
-          if (Array.isArray(prop.messages)) {
-            const normalized = prop.messages.map((msg: any) => ({
-              id: msg.id,
-              content: msg.content,
-              sender: { id: msg.sender.id, name: msg.sender.name },
-              createdAt:
-                typeof msg.createdAt === 'string'
-                  ? msg.createdAt
-                  : msg.createdAt?.toISOString() ?? new Date().toISOString(),
-              sentAt:
-                msg.sentAt == null
-                  ? undefined
-                  : typeof msg.sentAt === 'string'
-                  ? msg.sentAt
-                  : msg.sentAt.toISOString(),
-              deleted: msg.deleted ?? false,
-              editedAt:
-                msg.editedAt == null
-                  ? undefined
-                  : typeof msg.editedAt === 'string'
-                  ? msg.editedAt
-                  : msg.editedAt.toISOString(),
-            }));
-            setMessages(normalized);
-          }
-        });
+      dispatch(fetchPropertyById(id)).unwrap().then((prop) => {
+        if (Array.isArray(prop.messages)) {
+          const normalized = prop.messages.map((msg: any) => ({
+            id: msg.id,
+            content: msg.content,
+            sender: { id: msg.sender.id, name: msg.sender.name },
+            createdAt: typeof msg.createdAt === 'string' ? msg.createdAt : msg.createdAt?.toISOString() ?? new Date().toISOString(),
+            sentAt: msg.sentAt == null ? undefined : typeof msg.sentAt === 'string' ? msg.sentAt : msg.sentAt.toISOString(),
+            deleted: msg.deleted ?? false,
+            editedAt: msg.editedAt == null ? undefined : typeof msg.editedAt === 'string' ? msg.editedAt : msg.editedAt.toISOString(),
+          }));
+          setMessages(normalized);
+        }
+      });
       (socket as any).emit('joinRoom', id);
     }
     return () => {
@@ -70,26 +55,21 @@ const PropertyChatPage: React.FC = () => {
   }, [id, dispatch]);
 
   useEffect(() => {
-    const onNew = (msg: Message) =>
-      setMessages((prev) => [...prev, { ...msg, deleted: msg.deleted ?? false }]);
+    const onNew = (msg: Message) => setMessages((prev) => [...prev, { ...msg, deleted: msg.deleted ?? false }]);
     (socket as any).on('newMessage', onNew);
     return () => { (socket as any).off('newMessage', onNew); };
   }, []);
 
   useEffect(() => {
     const onDeleted = ({ messageId }: { messageId: string }) =>
-      setMessages((prev) =>
-        prev.map((m) => (m.id === messageId ? { ...m, deleted: true } : m))
-      );
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, deleted: true } : m)));
     (socket as any).on('messageDeleted', onDeleted);
     return () => { (socket as any).off('messageDeleted', onDeleted); };
   }, []);
 
   useEffect(() => {
     const onEdited = (updated: Message) =>
-      setMessages((prev) =>
-        prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
-      );
+      setMessages((prev) => prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)));
     (socket as any).on('messageEdited', onEdited);
     return () => { (socket as any).off('messageEdited', onEdited); };
   }, []);
@@ -107,7 +87,7 @@ const PropertyChatPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const onPresence = ({ userId, status }: { userId: string; status: 'online'|'offline' }) =>
+    const onPresence = ({ userId, status }: { userId: string; status: 'online' | 'offline' }) =>
       setPresence((prev) => ({ ...prev, [userId]: status }));
     (socket as any).on('presence', onPresence);
     return () => { (socket as any).off('presence', onPresence); };
@@ -122,20 +102,16 @@ const PropertyChatPage: React.FC = () => {
       ...prev,
       { id: tempId, content, sender: { id: authUser.id, name: authUser.name }, createdAt: now, sentAt: now, deleted: false },
     ]);
-    (socket as any).emit(
-      'sendMessage', { propertyId: current.id, content },
-      () => setMessages((prev) => prev.filter((m) => m.id !== tempId))
+    (socket as any).emit('sendMessage', { propertyId: current.id, content }, () =>
+      setMessages((prev) => prev.filter((m) => m.id !== tempId))
     );
   };
 
   const handleDelete = (messageId: string) => {
     if (!current?.id) return;
-    (socket as any).emit(
-      'deleteMessage', { propertyId: current.id, messageId },
-      (res: { success: boolean; error?: string }) => {
-        if (!res.success) toast.error(res.error || 'Delete failed');
-      }
-    );
+    (socket as any).emit('deleteMessage', { propertyId: current.id, messageId }, (res: { success: boolean; error?: string }) => {
+      if (!res.success) toast.error(res.error || 'Delete failed');
+    });
   };
 
   const handleEdit = (messageId: string) => {
@@ -145,6 +121,10 @@ const PropertyChatPage: React.FC = () => {
     setEditText(msg.content);
   };
 
+  const handleEditChange = (value: string) => {
+    setEditText(value);
+  };
+
   const handleEditSave = () => {
     if (!authUser || !current || !editingMessageId) return;
     (socket as any).emit(
@@ -152,7 +132,10 @@ const PropertyChatPage: React.FC = () => {
       { propertyId: current.id, messageId: editingMessageId, newContent: editText },
       (res: { success: boolean; error?: string }) => {
         if (!res.success) toast.error(res.error || 'Edit failed');
-        else setEditingMessageId(null);
+        else {
+          setEditingMessageId(null);
+          setEditText('');
+        }
       }
     );
   };
@@ -162,58 +145,31 @@ const PropertyChatPage: React.FC = () => {
     setEditText('');
   };
 
-  if (!current) {
-    return (
-      <UserLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <p>Loading chat...</p>
-        </div>
-      </UserLayout>
-    );
-  }
-
   const otherTyping = Array.from(typingUsers).filter((uid) => uid !== authUser?.id);
 
   return (
     <UserLayout>
       <div className={`min-h-screen p-6 ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-900'}`}>
         <div className="max-w-4xl mx-auto">
-          <Link href={`/properties/${current.id}`} className="text-blue-500 hover:underline">
-            ← Back to property
-          </Link>
+          <Link href={`/properties/${current?.id}`} className="text-blue-500 hover:underline">← Back to property</Link>
           <div className="flex items-center my-2">
-            <span className={`h-2 w-2 rounded-full mr-2 ${presence[current.landlord?.id||''] === 'online' ? 'bg-green-500' : 'bg-gray-400'}`} />
-            <span className="font-semibold">{current.landlord?.name}</span>
+            <span className={`h-2 w-2 rounded-full mr-2 ${presence[current?.landlord?.id || ''] === 'online' ? 'bg-green-500' : 'bg-gray-400'}`} />
+            <span className="font-semibold">{current?.landlord?.name}</span>
           </div>
           <div className="border rounded-lg flex flex-col h-[60vh]">
-            {editingMessageId ? (
-              <div className="p-4">
-                <textarea
-                  className="w-full border rounded p-2"
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  rows={3}
-                  autoFocus
-                />
-                <div className="flex justify-end space-x-2 mt-2">
-                  <button onClick={handleEditCancel} className="px-3 py-1">Cancel</button>
-                  <button onClick={handleEditSave} className="px-3 py-1 bg-blue-600 text-white rounded">Save</button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <MessageList
-                  messages={messages}
-                  currentUserId={authUser?.id || null}
-                  onDelete={handleDelete}
-                  onEdit={handleEdit}
-                />
-                {otherTyping.length > 0 && (
-                  <div className="p-2 italic text-gray-500">Someone is typing…</div>
-                )}
-                <ChatInput propertyId={current.id} onSend={handleSend} disabled={!socket.connected} />
-              </>
-            )}
+            <MessageList
+              messages={messages}
+              currentUserId={authUser?.id || null}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+              editingMessageId={editingMessageId}
+              editText={editText}
+              onEditChange={handleEditChange}
+              onEditSave={handleEditSave}
+              onEditCancel={handleEditCancel}
+            />
+            {otherTyping.length > 0 && <div className="p-2 italic text-gray-500">Someone is typing…</div>}
+            <ChatInput propertyId={current?.id ?? ''} onSend={handleSend} disabled={!socket.connected} />
           </div>
         </div>
       </div>
