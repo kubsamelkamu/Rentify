@@ -18,16 +18,19 @@ const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const authUser = useAppSelector((s) => s.auth.user);
+
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const emitTyping = useCallback(
     (isTyping: boolean) => {
       if (!socket.connected || !authUser) return;
-      socket.emit('typing', {
+
+      const payload: Parameters<ClientToServerEvents['typing']>[0] = {
         propertyId,
         userId: authUser.id,
         isTyping,
-      } as Parameters<ClientToServerEvents['typing']>[0]);
+      };
+      socket.emit('typing', payload);
     },
     [propertyId, authUser]
   );
@@ -39,28 +42,39 @@ const ChatInput: React.FC<ChatInputProps> = ({
     if (!socket.connected || !authUser) return;
     emitTyping(true);
 
-    if (typingTimeout.current) clearTimeout(typingTimeout.current);
-    typingTimeout.current = setTimeout(() => emitTyping(false), TYPING_DEBOUNCE);
+    if (typingTimeout.current) {
+      clearTimeout(typingTimeout.current);
+    }
+    typingTimeout.current = setTimeout(
+      () => emitTyping(false),
+      TYPING_DEBOUNCE
+    );
   };
 
   const handleSend = () => {
     const text = input.trim();
     if (!text) return;
+
     onSend(text);
     setInput('');
 
     if (!socket.connected || !authUser) return;
     emitTyping(false);
-    if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    if (typingTimeout.current) {
+      clearTimeout(typingTimeout.current);
+    }
   };
 
   useEffect(() => {
     return () => {
-      if (!socket.connected || !authUser) return;
-      emitTyping(false);
-      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+      if (socket.connected && authUser) {
+        emitTyping(false);
+      }
+      if (typingTimeout.current) {
+        clearTimeout(typingTimeout.current);
+      }
     };
-  }, [emitTyping, authUser]);
+  }, [emitTyping]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
