@@ -2,6 +2,18 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import api from '@/utils/api';
 
+export interface Message {
+  id: string;
+  content: string;
+  createdAt: Date; 
+  sender: {
+    id: string;
+    name: string;
+  };
+  isOptimistic?: boolean;
+  read: boolean; 
+}
+
 export interface PropertyImage {
   id: string;
   url: string;
@@ -11,6 +23,7 @@ export interface PropertyImage {
 }
 
 export interface Property {
+
   id: string;
   title: string;
   description: string;
@@ -23,6 +36,8 @@ export interface Property {
   landlord?: { id: string; name: string; email: string };
   images?: PropertyImage[];
   createdAt: string;
+
+  messages?: Message[];
 }
 
 export interface FetchPropertiesParams {
