@@ -107,7 +107,7 @@ export default function Footer() {
             We support Telebir and bank transfers. All payments are securely processed Via Chapa Payment gateway.
           </FAQItem>
           <FAQItem question="how can I chat with landlords?">
-            Navigate properties Detail,Click " chat with owner"button.
+            Navigate properties Detail,Click  chat with owner button.
           </FAQItem>
           <FAQItem question="How can I contact support?">
             Reach out via email at support@renthouse.com.
