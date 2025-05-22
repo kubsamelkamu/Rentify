@@ -65,7 +65,7 @@ export default function Footer() {
         <div className="md:col-span-1">
           <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
           <ul className="space-y-2">
-            {['about','properties', 'bookings', 'messages', 'terms&conditions'].map(key => (
+            {['about','properties', 'bookings', 'terms&conditions'].map(key => (
               <li key={key}>
                 <Link
                   href={`/${key}`}
@@ -106,9 +106,13 @@ export default function Footer() {
           <FAQItem question="What payment methods are accepted?">
             We support Telebir and bank transfers. All payments are securely processed Via Chapa Payment gateway.
           </FAQItem>
+          <FAQItem question="How can I chat with landlords?">
+            Navigate properties Detail page,Click "chat with owner" button.
+          </FAQItem>
           <FAQItem question="How can I contact support?">
             Reach out via email at support@renthouse.com.
           </FAQItem>
+
         </div>
       </div>
 
