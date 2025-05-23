@@ -48,7 +48,7 @@ export default function Header() {
   };
 
   return (
-    <header className={`border-b transition-colors duration-300 ${theme === 'light' ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-gray-900 border-gray-700 text-gray-100'}`}>
+    <header className={`sticky top-0 z-50 border-b transition-colors duration-300 ${theme === 'light' ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-gray-900 border-gray-700 text-gray-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
         <div className="flex-shrink-0">
           <Link href="/">
