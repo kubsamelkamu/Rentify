@@ -57,11 +57,7 @@ export default function Header() {
   };
 
   return (
-    <header className={`sticky top-0 z-50 border-b ${
-      theme==='light'
-        ? 'bg-gray-50 border-gray-200 text-gray-800'
-        : 'bg-gray-900 border-gray-700 text-gray-100'
-    }`}>
+    <header className={`sticky top-0 z-50 border-b transition-colors duration-300 ${theme === 'light' ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-gray-900 border-gray-700 text-gray-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
         <Link href="/"><span className="text-2xl font-bold text-blue-600 dark:text-blue-400 cursor-pointer">Rentify</span></Link>
         <nav className="hidden md:flex items-center space-x-6">

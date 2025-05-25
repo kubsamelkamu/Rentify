@@ -76,46 +76,18 @@ export default function Footer() {
         <div className="md:col-span-1">
           <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
           <ul className="space-y-2">
-            <li>
-              <Link
-                href="/about"
-                className={`hover:${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
-              >
-                About
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/properties"
-                className={`hover:${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
-              >
-                Properties
-              </Link>
-            </li>
-            <li>
-              <Link
-                href={bookingsLink}
-                className={`hover:${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
-              >
-                Bookings
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/messages"
-                className={`hover:${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
-              >
-                Messages
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/terms&conditions"
-                className={`hover:${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
-              >
-                Terms & Conditions
-              </Link>
-            </li>
+            {['about','properties', 'bookings', 'messages', 'terms&conditions'].map(key => (
+              <li key={key}>
+                <Link
+                  href={`/${key}`}
+                  className={`hover:${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`}
+                >
+                  {key.charAt(0).toUpperCase() + key.slice(1)}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -144,6 +116,9 @@ export default function Footer() {
           </FAQItem>
           <FAQItem question="What payment methods are accepted?">
             We support Telebir and bank transfers. All payments are securely processed Via Chapa Payment gateway.
+          </FAQItem>
+          <FAQItem question="how can I chat with landlords?">
+            Navigate properties Detail,Click  chat with owner button.
           </FAQItem>
           <FAQItem question="How can I contact support?">
             Reach out via email at support@renthouse.com.
