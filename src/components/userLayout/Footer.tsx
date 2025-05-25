@@ -2,7 +2,7 @@ import React, { useState, ReactNode, useContext } from 'react';
 import Link from 'next/link';
 import { ThemeContext } from '@/components/context/ThemeContext';
 import { MoonIcon, SunIcon } from 'lucide-react';
-import { useAppSelector } from '@/store/hooks'; 
+import { useAppSelector } from '@/store/hooks';
 
 interface FAQItemProps {
   question: string;
@@ -41,8 +41,7 @@ export function FAQItem({ question, children }: FAQItemProps) {
 export default function Footer() {
   const themeContext = useContext(ThemeContext)!;
   const { theme, toggleTheme } = themeContext;
-
-  const { user } = useAppSelector((state) => state.auth); 
+  const { user } = useAppSelector((state) => state.auth);
 
   const bookingsLink = !user
     ? '/auth/login?redirect=/bookings'
@@ -72,25 +71,24 @@ export default function Footer() {
             seamlessly, ensuring a smooth rental experience for everyone.
           </p>
         </div>
-
         <div className="md:col-span-1">
           <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
           <ul className="space-y-2">
-            {['about','properties', 'bookings', 'messages', 'terms&conditions'].map(key => (
-              <li key={key}>
-                <Link
-                  href={`/${key}`}
-                  className={`hover:${
-                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                  }`}
-                >
-                  {key.charAt(0).toUpperCase() + key.slice(1)}
-                </Link>
-              </li>
-            ))}
+            {['about', 'properties', 'bookings', 'terms&conditions'].map((key) => {
+              const linkHref = key === 'bookings' ? bookingsLink : `/${key}`;
+              return (
+                <li key={key}>
+                  <Link
+                    href={linkHref}
+                    className={`hover:${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
+                  >
+                    {key.charAt(0).toUpperCase() + key.replace('&', ' & ').slice(1)}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
-
         <div className="md:col-span-1">
           <h4 className="text-lg font-semibold mb-4">Need Help?</h4>
           <p className="text-sm mb-2">
@@ -117,8 +115,8 @@ export default function Footer() {
           <FAQItem question="What payment methods are accepted?">
             We support Telebir and bank transfers. All payments are securely processed Via Chapa Payment gateway.
           </FAQItem>
-          <FAQItem question="how can I chat with landlords?">
-            Navigate properties Detail,Click  chat with owner button.
+          <FAQItem question="How can I chat with landlords?">
+            Navigate to property details, then click the “Chat with owner” button.
           </FAQItem>
           <FAQItem question="How can I contact support?">
             Reach out via email at support@renthouse.com.
