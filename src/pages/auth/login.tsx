@@ -8,9 +8,11 @@ import { loginUser, clearError } from '@/store/slices/authSlice';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
+
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { loading, error: apiError } = useAppSelector((state) => state.auth);
+  const { redirect } = router.query as { redirect?: string };
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,9 +30,14 @@ export default function LoginPage() {
       setFormError('Please enter both email and password.');
       return;
     }
+
     try {
       await dispatch(loginUser({ email, password })).unwrap();
-      router.push(`/properties`);
+      const destination = redirect
+        ? decodeURIComponent(redirect)
+        : '/properties';
+
+      router.push(destination);
     } catch (err: unknown) {
       if (err instanceof Error) setFormError(err.message);
       else setFormError('Login failed. Please try again.');
@@ -112,14 +119,14 @@ export default function LoginPage() {
 
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600">
-                <Link href="/auth/reset-password"className="text-purple-600 hover:underline font-medium">
-                Forgot your password?
+                <Link href="/auth/reset-password" className="text-purple-600 hover:underline font-medium">
+                  Forgot your password?
                 </Link>
               </p>
               <p className="text-sm text-gray-600">
                 Don&apos;t have an account?{' '}
                 <Link href="/auth/register" className="text-purple-600 hover:underline font-medium">
-                 Sign up
+                  Sign up
                 </Link>
               </p>
             </div>
