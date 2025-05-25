@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { Booking } from '@/store/slices/bookingSlice';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -18,6 +19,18 @@ export interface ServerToClientEvents {
   messageEdited: (msg: ChatMessage) => void;
   typingStatus: (payload: { userId: string; isTyping: boolean }) => void;
   presence: (payload: { userId: string; status: 'online' | 'offline' }) => void;
+
+  newBooking: (booking: Booking) => void;
+  bookingStatusUpdate: (booking: {
+    id: string;
+    propertyId: string;
+    tenantId: string;
+    startDate: string;
+    endDate: string;
+    status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED';
+    createdAt: string;
+    updatedAt: string;
+  }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -42,10 +55,13 @@ export interface ClientToServerEvents {
   }) => void;
 }
 
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SOCKET_URL, {
-  autoConnect: false,
-  transports: ['websocket'],
-});
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
+  SOCKET_URL,
+  {
+    autoConnect: false,
+    transports: ['websocket'],
+  }
+);
 
 export function connectSocket(token: string) {
   socket.auth = { token };
