@@ -1,3 +1,5 @@
+import nextPWA from 'next-pwa';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -14,4 +16,14 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+const isProd = process.env.NODE_ENV === 'production';
+
+const config = isProd
+  ? nextPWA({
+      dest: 'public',
+      register: true,
+      skipWaiting: true,
+    })(nextConfig)
+  : nextConfig;
+
+export default config;
