@@ -1,0 +1,14 @@
+{
+  "name": "Rentify",
+  "short_name": "RentHouse",
+  "description": "Find and book rental homes seamlessly.",
+  "start_url": "/?utm_source=web_app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2E86AB",
+  "icons": [
+    { "src": "/icons/icon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
