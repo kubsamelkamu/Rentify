@@ -33,7 +33,7 @@ export default function Header() {
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState<Record<string,boolean>>({});
   const [selectedLang, setSelectedLang] = useState('EN');
 
-  const { user } = useAppSelector((state) => state.auth);
+  const { user } = useAppSelector((state) => state.auth)!;
   const dispatch = useAppDispatch();
   const { theme, toggleTheme } = useContext(ThemeContext)!;
 
@@ -42,7 +42,7 @@ export default function Header() {
   const navItems = useMemo<NavItem[]>(() => {
     const items = [...baseNavItems];
     let bookingsHref: string;
-    if (!user) bookingsHref = `/auth/login?redirect=/bookings`;
+    if (!user) bookingsHref = `/properties`;
     else if (user.role === 'TENANT') bookingsHref = '/bookings';
     else bookingsHref = '/landlord/bookings';
     items.splice(2, 0, { label: 'Bookings', href: bookingsHref });
