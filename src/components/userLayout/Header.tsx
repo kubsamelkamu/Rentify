@@ -140,7 +140,7 @@ export default function Header() {
               </div>
             </div>
           ) : (
-            <Link href={`/auth/login?redirect=${encodeURIComponent('/')}`} className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">
+            <Link href={`/auth/login`} className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">
               Login
             </Link>
           )}
