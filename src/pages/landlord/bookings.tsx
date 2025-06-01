@@ -1,11 +1,11 @@
-import { NextPage } from 'next'; 
+import { NextPage } from 'next';
 import { useEffect, useState, useContext } from 'react';
 import { useRouter } from 'next/router';
 import UserLayout from '@/components/userLayout/Layout';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import toast from 'react-hot-toast';
 import socket from '@/utils/socket';
-import {fetchLandlordBookings,confirmBooking,rejectBooking,updateBookingInStore,Booking} from '@/store/slices/bookingSlice';
+import {fetchLandlordBookings,confirmBooking,rejectBooking,updateBookingInStore,Booking,} from '@/store/slices/bookingSlice';
 import { ThemeContext } from '@/components/context/ThemeContext';
 
 const PAGE_SIZE = 5;
@@ -15,8 +15,11 @@ const LandlordBookingsPage: NextPage = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { theme } = useContext(ThemeContext)!;
-  const { user } = useAppSelector((s) => s.auth);
-  const { items: bookings, loading, error } = useAppSelector((s) => s.bookings);
+  const { user } = useAppSelector((state) => state.auth);
+  const { items: bookings, loading, error } = useAppSelector(
+    (state) => state.bookings
+  );
+
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(bookings.length / PAGE_SIZE));
   const paginated = bookings.slice(
@@ -41,36 +44,73 @@ const LandlordBookingsPage: NextPage = () => {
   }, [dispatch, user]);
 
   useEffect(() => {
+    const onFocus = () => {
+      if (user?.role === 'LANDLORD') {
+        dispatch(fetchLandlordBookings());
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [dispatch, user]);
+
+  useEffect(() => {
     if (!user?.id) return;
     const room = `landlord_${user.id}`;
     socket.emit('joinRoom', room);
 
-    const handleNew = (b: Booking) => {
+    const handleNewBooking = (b: Booking) => {
       dispatch(updateBookingInStore(b));
       toast.success(`New booking for "${b.property?.title}" received!`);
     };
-    const handleUpdate = (b: Booking) => {
+
+    const handleBookingStatusUpdate = (b: Booking) => {
       dispatch(updateBookingInStore(b));
       toast.success(`Booking "${b.property?.title}" is now ${b.status}`);
     };
 
-    socket.on('newBooking', handleNew);
-    socket.on('bookingStatusUpdate', handleUpdate);
+    const handlePaymentStatusUpdate = (payload: {
+      bookingId: string;
+      paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED';
+    }) => {
+      dispatch(
+        updateBookingInStore({
+          id: payload.bookingId as string,
+          payment: {
+            status: payload.paymentStatus,
+            amount: 0,
+            currency: '',
+            transactionId: '',
+          },
+        } as Booking)
+      );
+      if (payload.paymentStatus === 'SUCCESS') {
+        toast.success('Payment succeeded for booking');
+      } else if (payload.paymentStatus === 'FAILED') {
+        toast.error('Payment failed for booking');
+      }
+    };
+
+    socket.on('newBooking', handleNewBooking);
+    socket.on('bookingStatusUpdate', handleBookingStatusUpdate);
+    socket.on('paymentStatusUpdated', handlePaymentStatusUpdate);
 
     return () => {
       socket.emit('leaveRoom', room);
-      socket.off('newBooking', handleNew);
-      socket.off('bookingStatusUpdate', handleUpdate);
+      socket.off('newBooking', handleNewBooking);
+      socket.off('bookingStatusUpdate', handleBookingStatusUpdate);
+      socket.off('paymentStatusUpdated', handlePaymentStatusUpdate);
     };
   }, [dispatch, user]);
 
-  const handleAction = async (id: string, action: 'confirm' | 'reject') => {
+  const handleAction = async (bookingId: string, action: 'confirm' | 'reject') => {
     try {
       if (action === 'confirm') {
-        await dispatch(confirmBooking(id)).unwrap();
+        await dispatch(confirmBooking(bookingId)).unwrap();
         toast.success('Booking confirmed');
       } else {
-        await dispatch(rejectBooking(id)).unwrap();
+        await dispatch(rejectBooking(bookingId)).unwrap();
         toast.success('Booking rejected');
       }
     } catch (err: unknown) {
@@ -86,13 +126,11 @@ const LandlordBookingsPage: NextPage = () => {
         }`}
       >
         <h1 className="text-3xl font-bold mb-6">All Booking Requests</h1>
-
         {loading && <p className="text-gray-500">Loading…</p>}
         {error && <p className="text-red-500">{error}</p>}
         {!loading && bookings.length === 0 && (
           <p className="text-gray-600">No booking requests yet.</p>
         )}
-
         {!loading && paginated.length > 0 && (
           <div className="overflow-x-auto">
             <table
@@ -106,6 +144,7 @@ const LandlordBookingsPage: NextPage = () => {
                   <th className="p-3 text-left">Tenant</th>
                   <th className="p-3 text-left">Dates</th>
                   <th className="p-3 text-left">Status</th>
+                  <th className="p-3 text-left">Payment</th>
                   <th className="p-3 text-center">Actions</th>
                 </tr>
               </thead>
@@ -124,6 +163,16 @@ const LandlordBookingsPage: NextPage = () => {
                       {new Date(b.endDate).toLocaleDateString()}
                     </td>
                     <td className="p-3">{b.status}</td>
+                    <td className="p-3">
+                      {b.status === 'CONFIRMED' && b.payment?.status === 'PENDING' && (
+                        <span className="text-yellow-500">Awaiting Payment</span>
+                      )}
+                      {b.payment?.status === 'SUCCESS' && (
+                        <span className="text-green-500 font-medium">Paid</span>
+                      )}
+                      {!(b.status === 'CONFIRMED' && b.payment?.status === 'PENDING') &&
+                        !(b.payment?.status === 'SUCCESS') && <span>—</span>}
+                    </td>
                     <td className="p-3 text-center space-x-2">
                       {b.status === 'PENDING' ? (
                         <>
@@ -160,7 +209,7 @@ const LandlordBookingsPage: NextPage = () => {
             >
               Previous
             </button>
-            <span>
+            <span className={theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}>
               Page {currentPage} of {totalPages}
             </span>
             <button

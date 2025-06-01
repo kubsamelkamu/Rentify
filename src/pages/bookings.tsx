@@ -5,7 +5,13 @@ import UserLayout from '@/components/userLayout/Layout';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import toast from 'react-hot-toast';
 import socket from '@/utils/socket';
-import {fetchUserBookings,cancelBooking,Booking,updateBookingInStore,} from '@/store/slices/bookingSlice';
+import {
+  fetchUserBookings,
+  cancelBooking,
+  updateBookingInStore,
+  Booking,
+} from '@/store/slices/bookingSlice';
+import { initiatePayment } from '@/store/slices/paymentSlice';
 import { ThemeContext } from '@/components/context/ThemeContext';
 
 const PAGE_SIZE = 5;
@@ -14,8 +20,20 @@ const TenantBookingsPage: NextPage = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { theme } = useContext(ThemeContext)!;
-  const { user } = useAppSelector((s) => s.auth);
-  const { items: bookings, loading, error } = useAppSelector((s) => s.bookings);
+  const { user } = useAppSelector((state) => state.auth);
+  const { items: bookings, loading, error } = useAppSelector(
+    (state) => state.bookings
+  );
+  const { statuses: paymentStatuses } = useAppSelector(
+    (state) => state.payment
+  );
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(bookings.length / PAGE_SIZE);
+  const paginated = bookings.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
 
   useEffect(() => {
     if (!user) {
@@ -27,13 +45,6 @@ const TenantBookingsPage: NextPage = () => {
     }
   }, [user, router]);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(bookings.length / PAGE_SIZE);
-  const paginated = bookings.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
-
   useEffect(() => {
     if (user?.role === 'TENANT') {
       dispatch(fetchUserBookings());
@@ -41,32 +52,91 @@ const TenantBookingsPage: NextPage = () => {
   }, [dispatch, user]);
 
   useEffect(() => {
+    const onFocus = () => {
+      if (user?.role === 'TENANT') {
+        dispatch(fetchUserBookings());
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [dispatch, user]);
+
+  useEffect(() => {
     if (!user?.id) return;
     const room = `user_${user.id}`;
     socket.emit('joinRoom', room);
 
-    const handleNew = (b: Booking) => {
+    const handleNewBooking = (b: Booking) => {
       dispatch(updateBookingInStore(b));
       toast.success(`New booking for "${b.property?.title}" created!`);
     };
-    const handleUpdate = (b: Booking) => {
+
+    const handleBookingUpdate = (b: Booking) => {
       dispatch(updateBookingInStore(b));
-      toast.success(
-        `Your booking for "${b.property?.title}" is now ${b.status}`
-      );
+      toast.success(`Booking "${b.property?.title}" is now ${b.status}`);
     };
 
-    socket.on('newBooking', handleNew);
-    socket.on('bookingStatusUpdate', handleUpdate);
+    const handlePaymentUpdate = (payload: {
+      bookingId: string;
+      paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED';
+    }) => {
+      dispatch(
+        updateBookingInStore({
+          id: payload.bookingId as string,
+          payment: {
+            status: payload.paymentStatus,
+            amount: 0,
+            currency: '',
+            transactionId: '',
+          },
+        } as Booking)
+      );
+
+      if (payload.paymentStatus === 'SUCCESS') {
+        toast.success('Payment succeeded for your booking.');
+      } else if (payload.paymentStatus === 'FAILED') {
+        toast.error('Payment failed for your booking.');
+      }
+    };
+
+    socket.on('newBooking', handleNewBooking);
+    socket.on('bookingStatusUpdate', handleBookingUpdate);
+    socket.on('paymentStatusUpdated', handlePaymentUpdate);
 
     return () => {
       socket.emit('leaveRoom', room);
-      socket.off('newBooking', handleNew);
-      socket.off('bookingStatusUpdate', handleUpdate);
+      socket.off('newBooking', handleNewBooking);
+      socket.off('bookingStatusUpdate', handleBookingUpdate);
+      socket.off('paymentStatusUpdated', handlePaymentUpdate);
     };
-  }, [dispatch, user?.id]);
+  }, [dispatch, user]);
 
-  if (!user || user.role !== 'TENANT') return null;
+  const handleCancel = (bookingId: string) => {
+    const promise = dispatch(cancelBooking(bookingId)).unwrap();
+    toast.promise(promise, {
+      loading: 'Cancelling…',
+      success: 'Booking cancelled',
+      error: 'Cancel failed',
+    });
+  };
+
+  const handlePayNow = async (bookingId: string) => {
+    try {
+      const resultAction = await dispatch(
+        initiatePayment({ bookingId })
+      ).unwrap();
+      window.location.href = resultAction.checkoutUrl;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Already Paid';
+      toast.error(msg);
+    }
+  };
+
+  if (!user || user.role !== 'TENANT') {
+    return null;
+  }
 
   return (
     <UserLayout>
@@ -78,66 +148,118 @@ const TenantBookingsPage: NextPage = () => {
         }`}
       >
         <h1 className="text-3xl font-bold mb-6">My Bookings</h1>
-
         {loading && (
           <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
             Loading your bookings…
           </p>
         )}
         {error && <p className="text-red-500">{error}</p>}
-
         {!loading && bookings.length === 0 && (
           <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
             You haven’t made any bookings yet.
           </p>
         )}
-
         {!loading && paginated.length > 0 && (
           <div className="space-y-4">
-            {paginated.map((b) => (
-              <div
-                key={b.id}
-                className={`p-4 rounded shadow transition-colors ${
-                  theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p
-                      className={`font-medium ${
-                        theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
-                      }`}
-                    >
-                      {b.property?.title}{' '}
-                      <span className="italic">({b.status})</span>
-                    </p>
-                    <p
-                      className={
-                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                      }
-                    >
-                      {new Date(b.startDate).toLocaleDateString()} –{' '}
-                      {new Date(b.endDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {b.status === 'PENDING' && (
+            {paginated.map((b) => {
+              const serverStatus = b.payment?.status ?? null;
+              const clientStatus = paymentStatuses[b.id] ?? null;
+              const effectivePaymentStatus:
+                | 'PENDING'
+                | 'SUCCESS'
+                | 'FAILED'
+                | null =
+                serverStatus !== null
+                  ? serverStatus
+                  : clientStatus !== null
+                  ? clientStatus
+                  : null;
+
+              let paymentElement: React.ReactNode;
+
+              if (b.status === 'PENDING') {
+                paymentElement = (
+                  <span
+                    className={
+                      theme === 'dark'
+                        ? 'text-gray-400'
+                        : 'text-gray-600'
+                    }
+                  >
+                    Booking Pending
+                  </span>
+                );
+              } else if (b.status === 'CONFIRMED') {
+                if (
+                  effectivePaymentStatus === 'PENDING' ||
+                  effectivePaymentStatus === null
+                ) {
+                  paymentElement = (
                     <button
-                      onClick={() => {
-                        const promise = dispatch(cancelBooking(b.id)).unwrap();
-                        toast.promise(promise, {
-                          loading: 'Cancelling…',
-                          success: 'Cancelled!',
-                          error: 'Cancel failed',
-                        });
-                      }}
-                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                      onClick={() => handlePayNow(b.id)}
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                      Cancel
+                      Pay Now
                     </button>
-                  )}
+                  );
+                } else if (effectivePaymentStatus === 'SUCCESS') {
+                  paymentElement = (
+                    <span className="text-green-500 font-medium">Paid</span>
+                  );
+                } else if (effectivePaymentStatus === 'FAILED') {
+                  paymentElement = (
+                    <span className="text-red-500">Payment Failed</span>
+                  );
+                } else {
+                  paymentElement = <span>—</span>;
+                }
+              } else {
+                paymentElement = <span>—</span>;
+              }
+
+              return (
+                <div
+                  key={b.id}
+                  className={`p-4 rounded shadow transition-colors ${
+                    theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p
+                        className={`font-medium ${
+                          theme === 'dark'
+                            ? 'text-gray-100'
+                            : 'text-gray-900'
+                        }`}
+                      >
+                        {b.property?.title}{' '}
+                        <span className="italic">({b.status})</span>
+                      </p>
+                      <p
+                        className={
+                          theme === 'dark'
+                            ? 'text-gray-400'
+                            : 'text-gray-600'
+                        }
+                      >
+                        {new Date(b.startDate).toLocaleDateString()} –{' '}
+                        {new Date(b.endDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {b.status === 'PENDING' && (
+                      <button
+                        onClick={() => handleCancel(b.id)}
+                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-3">{paymentElement}</div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
         {!loading && bookings.length > PAGE_SIZE && (
@@ -155,9 +277,7 @@ const TenantBookingsPage: NextPage = () => {
               Page {currentPage} of {totalPages}
             </span>
             <button
-              onClick={() =>
-                setCurrentPage((p) => Math.min(p + 1, totalPages))
-              }
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages}
               className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50 hover:bg-blue-600 transition"
             >
