@@ -31,11 +31,16 @@ export interface ServerToClientEvents {
     createdAt: string;
     updatedAt: string;
   }) => void;
+
+  paymentStatusUpdated: (payload: {
+    bookingId: string;
+    paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED';
+  }) => void;
 }
 
 export interface ClientToServerEvents {
-  joinRoom: (propertyId: string) => void;
-  leaveRoom: (propertyId: string) => void;
+  joinRoom: (room: string) => void;
+  leaveRoom: (room: string) => void;
   sendMessage: (
     payload: { propertyId: string; content: string },
     ack: (msg: ChatMessage) => void
