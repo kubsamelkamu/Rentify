@@ -22,6 +22,12 @@ export interface Booking {
     name: string;
     email: string;
   };
+  payment?: {
+    status: 'PENDING' | 'SUCCESS' | 'FAILED';
+    amount: number;
+    currency: string;
+    transactionId: string;
+  };
 }
 
 interface BookingState {
