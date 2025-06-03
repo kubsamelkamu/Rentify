@@ -30,7 +30,7 @@ const baseNavItems: NavItem[] = [
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState<Record<string,boolean>>({});
+  const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState<Record<string, boolean>>({});
   const [selectedLang, setSelectedLang] = useState('EN');
 
   const { user } = useAppSelector((state) => state.auth)!;
@@ -50,34 +50,48 @@ export default function Header() {
   }, [user]);
 
   const toggleSubmenu = (label: string) => {
-    setMobileSubmenuOpen(prev => ({
+    setMobileSubmenuOpen((prev) => ({
       ...prev,
-      [label]: !prev[label]
+      [label]: !prev[label],
     }));
   };
 
+  const avatarSrc = user?.profilePhoto ?? '/avatar.jpg';
+
   return (
-    <header className={`sticky top-0 z-50 border-b transition-colors duration-300 ${theme === 'light' ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-gray-900 border-gray-700 text-gray-100'}`}>
+    <header
+      className={`sticky top-0 z-50 border-b transition-colors duration-300 ${
+        theme === 'light'
+          ? 'bg-gray-50 border-gray-200 text-gray-800'
+          : 'bg-gray-900 border-gray-700 text-gray-100'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
-        <Link href="/"><span className="text-2xl font-bold text-blue-600 dark:text-blue-400 cursor-pointer">Rentify</span></Link>
+        <Link href="/">
+          <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 cursor-pointer">
+            Rentify
+          </span>
+        </Link>
         <nav className="hidden md:flex items-center space-x-6">
-          {navItems.map(item => (
+          {navItems.map((item) => (
             <div key={item.label} className="relative group">
               {item.subItems ? (
                 <>
                   <button className="flex items-center text-md font-medium hover:text-blue-600 dark:hover:text-blue-400">
                     {item.label}
-                    <ChevronDown className="w-4 h-4 ml-1"/>
+                    <ChevronDown className="w-4 h-4 ml-1" />
                   </button>
-                  <div className={`absolute left-0 mt-2 w-48 rounded-lg shadow-xl z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${
-                    theme==='light' ? 'bg-white border border-gray-100':'bg-gray-800 border border-gray-700'
-                  }`}>
-                    {item.subItems.map(sub => (
+                  <div
+                    className={`absolute left-0 mt-2 w-48 rounded-lg shadow-xl z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${
+                      theme === 'light' ? 'bg-white border border-gray-100' : 'bg-gray-800 border border-gray-700'
+                    }`}
+                  >
+                    {item.subItems.map((sub) => (
                       <Link
                         key={sub.label}
                         href={sub.href}
                         className={`block px-4 py-3 text-sm ${
-                          theme==='light'?'text-gray-700 hover:bg-gray-50':'text-gray-100 hover:bg-gray-700'
+                          theme === 'light' ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-100 hover:bg-gray-700'
                         }`}
                       >
                         {sub.label}
@@ -86,7 +100,10 @@ export default function Header() {
                   </div>
                 </>
               ) : (
-                <Link href={item.href!} className="text-md font-medium hover:text-blue-600 dark:hover:text-blue-400">
+                <Link
+                  href={item.href!}
+                  className="text-md font-medium hover:text-blue-600 dark:hover:text-blue-400"
+                >
                   {item.label}
                 </Link>
               )}
@@ -94,16 +111,32 @@ export default function Header() {
           ))}
         </nav>
         <div className="hidden md:flex items-center space-x-4">
-          <button onClick={toggleTheme} className="inline-flex items-center px-3 py-1 border rounded-full text-sm transition-colors">
-            {theme==='dark' ? <><SunIcon className="w-5 h-5 mr-2"/> Light</> : <><MoonIcon className="w-5 h-5 mr-2"/> Dark</>}
+          <button
+            onClick={toggleTheme}
+            className="inline-flex items-center px-3 py-1 border rounded-full text-sm transition-colors"
+          >
+            {theme === 'dark' ? (
+              <>
+                <SunIcon className="w-5 h-5 mr-2" /> Light
+              </>
+            ) : (
+              <>
+                <MoonIcon className="w-5 h-5 mr-2" /> Dark
+              </>
+            )}
           </button>
+
           <div className="relative group">
             <button className="px-3 py-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
               {selectedLang}
             </button>
             <div className="absolute right-0 mt-2 w-28 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <div className={`${theme==='light'?'bg-white border border-gray-100':'bg-gray-800 border border-gray-700'} rounded-lg`}>
-                {languages.map(lang => (
+              <div
+                className={`${
+                  theme === 'light' ? 'bg-white border border-gray-100' : 'bg-gray-800 border border-gray-700'
+                } rounded-lg`}
+              >
+                {languages.map((lang) => (
                   <button
                     key={lang}
                     onClick={() => setSelectedLang(lang)}
@@ -115,28 +148,37 @@ export default function Header() {
               </div>
             </div>
           </div>
+
           {user ? (
             <div className="relative group">
-              <Image
-                src="/avatar.jpg"
-                alt="avatar"
-                width={32}
-                height={32}
-                className="rounded-full cursor-pointer ring-2 ring-blue-500"
-                priority
-              />
-              <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <div className={`${theme==='light'?'bg-white border border-gray-100':'bg-gray-800 border border-gray-700'} rounded-lg`}>
-                  <Link href="/profile" className="block px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-                    Your Profile
-                  </Link>
-                  <button
-                    onClick={() => dispatch(logout())}
-                    className="block w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    Logout
-                  </button>
-                </div>
+              <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-blue-500">
+                <Image
+                  src={avatarSrc}
+                  alt="User Avatar"
+                  width={32}
+                  height={32}
+                  className="object-cover"
+                  priority
+                />
+              </div>
+
+              <div
+                className={`absolute right-0 mt-2 w-48 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${
+                  theme === 'light' ? 'bg-white border border-gray-100' : 'bg-gray-800 border border-gray-700'
+                }`}
+              >
+                <Link
+                  href="/profile"
+                  className="block px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Your Profile
+                </Link>
+                <button
+                  onClick={() => dispatch(logout())}
+                  className="block w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Logout
+                </button>
               </div>
             </div>
           ) : (
@@ -146,14 +188,27 @@ export default function Header() {
           )}
         </div>
         <div className="md:hidden flex items-center space-x-3">
-          <button onClick={toggleTheme} className="inline-flex items-center px-2 py-1 border rounded-full text-sm">
-            {theme==='dark' ? <SunIcon className="w-5 h-5"/> : <MoonIcon className="w-5 h-5"/>}
+          <button
+            onClick={toggleTheme}
+            className="inline-flex items-center px-2 py-1 border rounded-full text-sm"
+          >
+            {theme === 'dark' ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
           </button>
+
           {user && (
-            <Image src="/avatar.jpg" alt="avatar" width={32} height={32}
-                   className="rounded-full ring-2 ring-blue-500"/>
+            <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-blue-500">
+              <Image
+                src={avatarSrc}
+                alt="User Avatar"
+                width={32}
+                height={32}
+                className="object-cover"
+                priority
+              />
+            </div>
           )}
-          <button onClick={() => setMobileMenuOpen(o => !o)} className="p-2 rounded-lg">
+
+          <button onClick={() => setMobileMenuOpen((o) => !o)} className="p-2 rounded-lg">
             {mobileMenuOpen ? '✕' : '☰'}
           </button>
         </div>
@@ -164,10 +219,12 @@ export default function Header() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className={`${theme==='light'?'bg-white border-t border-gray-100':'bg-gray-900 border-t border-gray-700'} md:hidden overflow-hidden`}
+            className={`${
+              theme === 'light' ? 'bg-white border-t border-gray-100' : 'bg-gray-900 border-t border-gray-700'
+            } md:hidden overflow-hidden`}
           >
             <div className="px-4 py-4 space-y-4">
-              {navItems.map(item => (
+              {navItems.map((item) => (
                 <div key={item.label}>
                   {item.subItems ? (
                     <>
@@ -176,7 +233,7 @@ export default function Header() {
                         className="w-full flex justify-between items-center px-2 py-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
                       >
                         {item.label}
-                        {mobileSubmenuOpen[item.label] ? <ChevronUp/> : <ChevronDown/>}
+                        {mobileSubmenuOpen[item.label] ? <ChevronUp /> : <ChevronDown />}
                       </button>
                       <AnimatePresence>
                         {mobileSubmenuOpen[item.label] && (
@@ -186,7 +243,7 @@ export default function Header() {
                             exit={{ height: 0, opacity: 0 }}
                             className="pl-6 mt-1 space-y-1"
                           >
-                            {item.subItems.map(sub => (
+                            {item.subItems.map((sub) => (
                               <Link
                                 key={sub.label}
                                 href={sub.href}
@@ -209,15 +266,16 @@ export default function Header() {
                   )}
                 </div>
               ))}
+
               <div>
                 <p className="text-sm font-medium mb-2">Language</p>
                 <div className="flex space-x-2">
-                  {languages.map(lang => (
+                  {languages.map((lang) => (
                     <button
                       key={lang}
                       onClick={() => setSelectedLang(lang)}
                       className={`flex-1 px-3 py-2 text-sm text-center rounded ${
-                        selectedLang===lang
+                        selectedLang === lang
                           ? 'bg-blue-600 text-white'
                           : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}
@@ -227,6 +285,7 @@ export default function Header() {
                   ))}
                 </div>
               </div>
+
               <div>
                 {user ? (
                   <>

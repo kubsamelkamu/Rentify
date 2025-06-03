@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '@/utils/api';
+import axios from 'axios';
 
 export const registerUser = createAsyncThunk<
   void,
@@ -11,8 +12,7 @@ export const registerUser = createAsyncThunk<
     try {
       await api.post('/api/auth/register', userData);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : String(err);
+      const message = err instanceof Error ? err.message : String(err);
       return rejectWithValue(message);
     }
   }
@@ -29,15 +29,84 @@ export const loginUser = createAsyncThunk<
       const response = await api.post('/api/auth/login', credentials);
       return response.data;
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : String(err);
+      const message = err instanceof Error ? err.message : String(err);
       return rejectWithValue(message);
     }
   }
 );
 
+export const fetchCurrentProfile = createAsyncThunk<
+  {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    profilePhoto: string | null;
+    createdAt: string;
+    updatedAt: string;
+  },
+  void,
+  { rejectValue: string }
+>(
+  'auth/fetchProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/api/users/me');
+      return response.data;
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        return rejectWithValue(err.response?.data?.error || err.message);
+      }
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+      return rejectWithValue('Failed to fetch profile');
+    }
+  }
+);
+
+export const saveProfile = createAsyncThunk<
+  {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    profilePhoto: string | null;
+    createdAt: string;
+    updatedAt: string;
+  },
+  FormData,
+  { rejectValue: string }
+>(
+  'auth/saveProfile',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/api/users/me', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        return rejectWithValue(err.response?.data?.error || err.message);
+      }
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
+      return rejectWithValue('Failed to save profile');
+    }
+  }
+);
+
 interface AuthState {
-  user: { id: string; name: string; email: string; role: string } | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    profilePhoto: string | null;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
   token: string | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
@@ -72,7 +141,15 @@ const authSlice = createSlice({
       state,
       action: PayloadAction<{
         token: string;
-        user: { id: string; name: string; email: string; role: string };
+        user: {
+          id: string;
+          name: string;
+          email: string;
+          role: string;
+          profilePhoto: string | null;
+          createdAt: string;
+          updatedAt: string;
+        };
       }>
     ) => {
       state.token = action.payload.token;
@@ -93,32 +170,63 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.status = 'failed';
-        state.error =
-          action.payload || action.error.message || 'Failed to register';
+        state.error = action.payload || action.error.message || 'Failed to register';
       });
-
     builder
       .addCase(loginUser.pending, (state) => {
         state.status = 'loading';
         state.error = null;
+        state.loading = true;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.loading = false;
-        state.user = action.payload.user;
+        state.user = {
+          id: action.payload.user.id,
+          name: action.payload.user.name,
+          email: action.payload.user.email,
+          role: action.payload.user.role,
+          profilePhoto: null,
+          createdAt: '',  
+          updatedAt: '',
+        };
         state.token = action.payload.token;
         state.error = null;
         localStorage.setItem('token', action.payload.token);
-        localStorage.setItem(
-          'user',
-          JSON.stringify(action.payload.user)
-        );
+        localStorage.setItem('user', JSON.stringify(state.user));
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.status = 'failed';
         state.loading = false;
-        state.error =
-          action.payload || action.error.message || 'Failed to login';
+        state.error = action.payload || action.error.message || 'Failed to login';
+      });
+    builder
+      .addCase(fetchCurrentProfile.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(fetchCurrentProfile.fulfilled, (state, { payload }) => {
+        state.status = 'succeeded';
+        state.user = payload;
+        localStorage.setItem('user', JSON.stringify(payload));
+      })
+      .addCase(fetchCurrentProfile.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error.message || 'Failed to load profile';
+      });
+    builder
+      .addCase(saveProfile.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(saveProfile.fulfilled, (state, { payload }) => {
+        state.status = 'succeeded';
+        state.user = payload;
+        localStorage.setItem('user', JSON.stringify(payload));
+      })
+      .addCase(saveProfile.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error.message || 'Failed to save profile';
       });
   },
 });
