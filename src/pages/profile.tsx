@@ -7,6 +7,7 @@ import {fetchCurrentProfile,saveProfile,clearError,}from "@/store/slices/authSli
 import { ThemeContext } from "@/components/context/ThemeContext";
 import UserLayout from "@/components/userLayout/Layout";
 import toast from "react-hot-toast";
+import Head from "next/head";
 
 const ProfilePage: NextPage = () => {
 
@@ -114,6 +115,14 @@ const ProfilePage: NextPage = () => {
 
   return (
     <UserLayout>
+      <Head>
+        <title> Rentify | Profile</title>
+        <meta
+          name="description"
+          content="View and edit your profile details on Rentify, including your name, email, and profile photo."
+        />
+        <link rel="canonical" href="/profile" />
+      </Head>
       <div
         className={`max-w-3xl mx-auto my-12 p-6 rounded-2xl shadow ${
           theme === "dark"
