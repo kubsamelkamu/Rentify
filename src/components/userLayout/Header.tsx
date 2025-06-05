@@ -12,6 +12,7 @@ interface NavItem {
   href?: string;
   subItems?: SubItem[];
 }
+
 interface SubItem {
   label: string;
   href: string;
@@ -29,6 +30,7 @@ const baseNavItems: NavItem[] = [
 ];
 
 export default function Header() {
+  
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState<Record<string, boolean>>({});
   const [selectedLang, setSelectedLang] = useState('EN');
@@ -56,7 +58,8 @@ export default function Header() {
     }));
   };
 
-  const avatarSrc = user?.profilePhoto ?? '/avatar.jpg';
+  const initial = user?.name?.charAt(0).toUpperCase() ?? '';
+  const avatarSrc = user?.profilePhoto ?? '';
 
   return (
     <header
@@ -151,16 +154,22 @@ export default function Header() {
 
           {user ? (
             <div className="relative group">
-              <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-blue-500">
-                <Image
-                  src={avatarSrc}
-                  alt="User Avatar"
-                  width={32}
-                  height={32}
-                  className="object-cover"
-                  priority
-                />
-              </div>
+              {avatarSrc ? (
+                <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-blue-500">
+                  <Image
+                    src={avatarSrc}
+                    alt="User Avatar"
+                    width={32}
+                    height={32}
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold ring-2 ring-blue-500">
+                  {initial}
+                </div>
+              )}
 
               <div
                 className={`absolute right-0 mt-2 w-48 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${
@@ -187,6 +196,7 @@ export default function Header() {
             </Link>
           )}
         </div>
+
         <div className="md:hidden flex items-center space-x-3">
           <button
             onClick={toggleTheme}
@@ -196,16 +206,24 @@ export default function Header() {
           </button>
 
           {user && (
-            <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-blue-500">
-              <Image
-                src={avatarSrc}
-                alt="User Avatar"
-                width={32}
-                height={32}
-                className="object-cover"
-                priority
-              />
-            </div>
+            <>
+              {avatarSrc ? (
+                <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-blue-500">
+                  <Image
+                    src={avatarSrc}
+                    alt="User Avatar"
+                    width={32}
+                    height={32}
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold ring-2 ring-blue-500">
+                  {initial}
+                </div>
+              )}
+            </>
           )}
 
           <button onClick={() => setMobileMenuOpen((o) => !o)} className="p-2 rounded-lg">
@@ -213,6 +231,7 @@ export default function Header() {
           </button>
         </div>
       </div>
+
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
