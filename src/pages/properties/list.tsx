@@ -1,8 +1,23 @@
+// src/pages/properties/list.tsx
+
 import { NextPage } from 'next';
 import Head from 'next/head';
-import {useState,FormEvent,ChangeEvent,useEffect,useContext,} from 'react';
+import {
+  useState,
+  FormEvent,
+  ChangeEvent,
+  useEffect,
+  useContext,
+} from 'react';
 import { useRouter } from 'next/router';
-import {BedDouble,Bath,Home,MapPin,Tag,ImageIcon,} from 'lucide-react';
+import {
+  BedDouble,
+  Bath,
+  Home,
+  MapPin,
+  Tag,
+  ImageIcon,
+} from 'lucide-react';
 import Image from 'next/image';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createProperty, Property } from '@/store/slices/propertySlice';
@@ -12,26 +27,43 @@ import UserLayout from '@/components/userLayout/Layout';
 import { ThemeContext } from '@/components/context/ThemeContext';
 
 const NewPropertyPage: NextPage = () => {
-
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const { theme } = useContext(ThemeContext)!;
+
+  const { user, status: authStatus } = useAppSelector((state) => state.auth);
   const { loading: creatingProperty, error: apiError } = useAppSelector(
     (state) => state.properties
   );
-  const { theme } = useContext(ThemeContext)!;
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
   const [rentPerMonth, setRentPerMonth] = useState('');
   const [numBedrooms, setNumBedrooms] = useState(1);
   const [numBathrooms, setNumBathrooms] = useState(1);
-  const [propertyType, setPropertyType] = useState('APARTMENT');
+  const [propertyType, setPropertyType] = useState<
+    'APARTMENT' | 'HOUSE' | 'STUDIO' | 'VILLA'
+  >('APARTMENT');
   const [amenities, setAmenities] = useState<string[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [formError, setFormError] = useState<string>('');
-
   const [uploadingImages, setUploadingImages] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      router.replace(
+        `/auth/login?redirect=${encodeURIComponent('/properties/list')}`
+      );
+      return;
+    }
+
+    if (user.role !== 'LANDLORD') {
+      alert('you must be a landlord to list properties');
+      router.replace('/become-landlord');
+    }
+  }, [user, authStatus, router]);
 
   useEffect(() => {
     const urls = files.map((file) => URL.createObjectURL(file));
@@ -49,8 +81,7 @@ const NewPropertyPage: NextPage = () => {
     e.preventDefault();
     setFormError('');
 
-
-    const lettersOnlyRegex = /^[A-Za-z\s.]+$/;
+    const lettersOnlyRegex = /^[A-Za-z\s.,]+$/;
     if (!lettersOnlyRegex.test(title.trim())) {
       setFormError('Title must contain only letters and spaces.');
       return;
@@ -65,9 +96,7 @@ const NewPropertyPage: NextPage = () => {
     }
     for (const amenity of amenities) {
       if (!lettersOnlyRegex.test(amenity.trim())) {
-        setFormError(
-          'Each amenity must contain only letters and spaces.'
-        );
+        setFormError('Each amenity must contain only letters and spaces.');
         return;
       }
     }
@@ -82,6 +111,7 @@ const NewPropertyPage: NextPage = () => {
       propertyType,
       amenities,
     };
+
     const resultAction = await dispatch(createProperty(payload));
     if (!createProperty.fulfilled.match(resultAction)) {
       return;
@@ -89,19 +119,15 @@ const NewPropertyPage: NextPage = () => {
 
     const created: Property = resultAction.payload;
     const propertyId = created.id;
-
     if (files.length) {
       setUploadingImages(true);
-
       const formData = new FormData();
       files.forEach((file) => formData.append('images', file));
 
       try {
-        await api.post(
-          `/api/properties/${propertyId}/images`,
-          formData,
-          { headers: { 'Content-Type': 'multipart/form-data' } }
-        );
+        await api.post(`/api/properties/${propertyId}/images`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
       } catch {
         setFormError('Failed to upload images. Please try again.');
         return;
@@ -109,6 +135,7 @@ const NewPropertyPage: NextPage = () => {
         setUploadingImages(false);
       }
     }
+
     router.push(`/properties/${propertyId}`);
   };
 
@@ -141,15 +168,12 @@ const NewPropertyPage: NextPage = () => {
             }`}
           >
             <h1 className="text-3xl font-extrabold">List a New Property</h1>
-            <p
-              className={`mt-1 ${
-                theme === 'dark' ? 'opacity-90' : 'opacity-80'
-              }`}
-            >
+            <p className={`mt-1 ${theme === 'dark' ? 'opacity-90' : 'opacity-80'}`}>
               Reach hundreds of renters
             </p>
           </div>
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            {/* Title */}
             <div>
               <label
                 className={`flex items-center text-sm font-medium mb-1 ${
@@ -176,6 +200,8 @@ const NewPropertyPage: NextPage = () => {
                 }`}
               />
             </div>
+
+            {/* Description */}
             <div>
               <label
                 className={`flex items-center text-sm font-medium mb-1 ${
@@ -202,6 +228,8 @@ const NewPropertyPage: NextPage = () => {
                 }`}
               />
             </div>
+
+            {/* City + Rent Per Month */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label
@@ -229,6 +257,7 @@ const NewPropertyPage: NextPage = () => {
                   }`}
                 />
               </div>
+
               <div>
                 <label
                   className={`flex items-center text-sm font-medium mb-1 ${
@@ -267,6 +296,8 @@ const NewPropertyPage: NextPage = () => {
                 </div>
               </div>
             </div>
+
+            {/* Bedrooms + Bathrooms */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label
@@ -322,6 +353,8 @@ const NewPropertyPage: NextPage = () => {
                 />
               </div>
             </div>
+
+            {/* Property Type + Amenities */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label
@@ -333,7 +366,11 @@ const NewPropertyPage: NextPage = () => {
                 </label>
                 <select
                   value={propertyType}
-                  onChange={(e) => setPropertyType(e.target.value)}
+                  onChange={(e) =>
+                    setPropertyType(
+                      e.target.value as 'APARTMENT' | 'HOUSE' | 'STUDIO' | 'VILLA'
+                    )
+                  }
                   className={`w-full px-4 py-2 rounded-lg shadow-sm focus:ring-2 ${
                     theme === 'dark'
                       ? 'bg-gray-700 border-gray-600 focus:border-blue-400 focus:ring-blue-400 text-gray-100'
@@ -346,6 +383,7 @@ const NewPropertyPage: NextPage = () => {
                   <option value="VILLA">Villa</option>
                 </select>
               </div>
+
               <div>
                 <label
                   className={`block text-sm font-medium mb-1 ${
@@ -374,6 +412,8 @@ const NewPropertyPage: NextPage = () => {
                 />
               </div>
             </div>
+
+            {/* Images Upload */}
             <div>
               <label
                 className={`flex items-center text-sm font-medium mb-1 ${
@@ -427,6 +467,7 @@ const NewPropertyPage: NextPage = () => {
               )}
             </div>
 
+            {/* Show any form error */}
             {(formError || apiError) && (
               <p
                 className={`text-sm ${
@@ -436,13 +477,17 @@ const NewPropertyPage: NextPage = () => {
                 {formError || apiError}
               </p>
             )}
+
+            {/* Submit Button */}
             <motion.button
               type="submit"
               disabled={isSubmitting}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+              whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
               className={`w-full py-3 rounded-lg font-semibold shadow-lg disabled:opacity-50 ${
-                theme === 'dark'
+                isSubmitting
+                  ? ''
+                  : theme === 'dark'
                   ? 'bg-blue-700 text-blue-100 hover:bg-blue-600'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
