@@ -12,7 +12,6 @@ interface NavItem {
   href?: string;
   subItems?: SubItem[];
 }
-
 interface SubItem {
   label: string;
   href: string;
@@ -30,7 +29,7 @@ const baseNavItems: NavItem[] = [
 ];
 
 export default function Header() {
-  
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState<Record<string, boolean>>({});
   const [selectedLang, setSelectedLang] = useState('EN');
@@ -42,12 +41,37 @@ export default function Header() {
   const languages = ['EN', 'AM', 'OR'];
 
   const navItems = useMemo<NavItem[]>(() => {
-    const items = [...baseNavItems];
+    const items: NavItem[] = baseNavItems.map((item) => {
+      if (item.subItems) {
+        return {
+          label: item.label,
+          subItems: item.subItems.map((sub) => ({ ...sub })),
+        };
+      } else {
+        return { ...item };
+      }
+    });
+
     let bookingsHref: string;
     if (!user) bookingsHref = `/properties`;
     else if (user.role === 'TENANT') bookingsHref = '/bookings';
     else bookingsHref = '/landlord/bookings';
+
     items.splice(2, 0, { label: 'Bookings', href: bookingsHref });
+
+    const propertiesItem = items.find((i) => i.label === 'Properties');
+    if (propertiesItem?.subItems) {
+      propertiesItem.subItems = propertiesItem.subItems.map((sub) => {
+        if (sub.label === 'List Property') {
+          return {
+            label: sub.label,
+            href: user?.role === 'LANDLORD' ? '/properties/list' : '/become-landlord',
+          };
+        }
+        return sub;
+      });
+    }
+
     return items;
   }, [user]);
 
@@ -62,7 +86,7 @@ export default function Header() {
   const avatarSrc = user?.profilePhoto ?? '';
 
   return (
-    <header
+    <header  
       className={`sticky top-0 z-50 border-b transition-colors duration-300 ${
         theme === 'light'
           ? 'bg-gray-50 border-gray-200 text-gray-800'
@@ -232,6 +256,7 @@ export default function Header() {
         </div>
       </div>
 
+      {/* Mobile submenu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -262,7 +287,7 @@ export default function Header() {
                             exit={{ height: 0, opacity: 0 }}
                             className="pl-6 mt-1 space-y-1"
                           >
-                            {item.subItems.map((sub) => (
+                            {item.subItems!.map((sub) => (
                               <Link
                                 key={sub.label}
                                 href={sub.href}
