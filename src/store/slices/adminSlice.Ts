@@ -163,23 +163,21 @@ export const fetchUsers = createAsyncThunk<
 );
 
 export const changeUserRole = createAsyncThunk<
-  User,
+  { user: User; token: string },
   { userId: string; role: 'TENANT' | 'LANDLORD' | 'ADMIN' },
   { rejectValue: string }
 >(
   'admin/changeUserRole',
   async ({ userId, role }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/api/admin/users/${userId}/role`, { role });
-      return response.data as User;
-    } catch (error: unknown) {
-      let message: string;
-      if (axios.isAxiosError(error) && error.response) {
-        message = (error.response.data as { error?: string }).error || error.message;
-      } else if (error instanceof Error) {
-        message = error.message;
-      } else {
-        message = String(error);
+      const response = await api.put(`/api/users/${userId}/role`, { role });
+      return response.data as { user: User; token: string };
+    } catch (err: unknown) {
+      let message = 'Failed to change role';
+      if (axios.isAxiosError(err) && err.response) {
+        message = (err.response.data as { error?: string }).error || err.message;
+      } else if (err instanceof Error) {
+        message = err.message;
       }
       return rejectWithValue(message);
     }
@@ -395,11 +393,14 @@ const adminSlice = createSlice({
       state.loading = true;
       state.error = null;
     });
-    builder.addCase(changeUserRole.fulfilled, (state, action: PayloadAction<User>) => {
-      state.loading = false;
-      const idx = state.users.findIndex((u) => u.id === action.payload.id);
-      if (idx >= 0) state.users[idx] = action.payload;
+    builder.addCase(changeUserRole.fulfilled, (state, action) => {
+      const updatedUser = action.payload.user;
+      const index = state.users.findIndex((u) => u.id === updatedUser.id);
+      if (index !== -1) {
+        state.users[index] = updatedUser;
+      }
     });
+
     builder.addCase(changeUserRole.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload ?? 'Failed to update user role';
