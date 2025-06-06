@@ -1,20 +1,19 @@
 import {ChangeEvent,FormEvent,useEffect,useState,useContext,} from "react";
 import { NextPage } from "next";
+import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import {fetchCurrentProfile,saveProfile,clearError,} from "@/store/slices/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import {fetchCurrentProfile,saveProfile,clearError,}from "@/store/slices/authSlice";
 import { ThemeContext } from "@/components/context/ThemeContext";
 import UserLayout from "@/components/userLayout/Layout";
 import toast from "react-hot-toast";
-import Head from "next/head";
 
 const ProfilePage: NextPage = () => {
 
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { theme } = useContext(ThemeContext)!;
-
   const { user, status: fetchStatus, error: fetchError } = useAppSelector(
     (s) => s.auth
   );
@@ -24,10 +23,13 @@ const ProfilePage: NextPage = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [nameError, setNameError] = useState("");
 
   useEffect(() => {
     if (user === null) {
-      router.replace(`/auth/login?redirect=${encodeURIComponent("/profile")}`);
+      router.replace(
+        `/auth/login?redirect=${encodeURIComponent("/profile")}`
+      );
     }
   }, [user, router]);
 
@@ -54,13 +56,27 @@ const ProfilePage: NextPage = () => {
     setFile(selected);
   };
 
+  const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val === "" || /^[A-Za-z\s]+$/.test(val)) {
+      setName(val);
+      setNameError("");
+    } else {
+      setNameError("Name can only contain letters and spaces.");
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!/^[A-Za-z\s]+$/.test(name.trim())) {
+      setNameError("Name can only contain letters and spaces.");
+      return;
+    }
 
     setSaving(true);
     const formData = new FormData();
-    formData.append("name", name);
+    formData.append("name", name.trim());
     formData.append("email", email);
     if (file) {
       formData.append("profilePhoto", file);
@@ -116,7 +132,7 @@ const ProfilePage: NextPage = () => {
   return (
     <UserLayout>
       <Head>
-        <title> Rentify | Profile</title>
+        <title>Rentify | Profile</title>
         <meta
           name="description"
           content="View and edit your profile details on Rentify, including your name, email, and profile photo."
@@ -125,18 +141,14 @@ const ProfilePage: NextPage = () => {
       </Head>
       <div
         className={`max-w-3xl mx-auto my-12 p-6 rounded-2xl shadow ${
-          theme === "dark"
-            ? "bg-gray-800 text-gray-100"
-            : "bg-white text-gray-900"
+          theme === "dark" ? "bg-gray-800 text-gray-100" : "bg-white text-gray-900"
         }`}
       >
         <h1 className="text-2xl font-bold mb-6">Your Profile</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-1">
-              Profile Photo
-            </label>
+            <label className="block text-sm font-medium mb-1">Profile Photo</label>
             <div className="flex items-center space-x-6">
               {previewUrl ? (
                 <div className="relative h-24 w-24 rounded-full overflow-hidden bg-gray-200">
@@ -185,13 +197,16 @@ const ProfilePage: NextPage = () => {
                 type="text"
                 required
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={handleNameChange}
                 className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
                   theme === "dark"
                     ? "bg-gray-700 border-gray-600 focus:ring-blue-400 text-gray-100"
                     : "bg-gray-50 border-gray-300 focus:ring-blue-500 text-gray-900"
                 }`}
               />
+              {nameError && (
+                <p className="mt-1 text-sm text-red-500">{nameError}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
@@ -201,15 +216,14 @@ const ProfilePage: NextPage = () => {
                 type="email"
                 readOnly
                 value={email}
-                className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
+                className={`w-full px-4 py-2 rounded-lg border cursor-not-allowed ${
                   theme === "dark"
-                    ? "bg-gray-700 border-gray-600 focus:ring-blue-400 text-gray-100"
-                    : "bg-gray-50 border-gray-300 focus:ring-blue-500 text-gray-900"
+                    ? "bg-gray-700 border-gray-600 text-gray-100"
+                    : "bg-gray-50 border-gray-300 text-gray-900"
                 }`}
               />
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium mb-1">Role</label>
             <input
@@ -223,11 +237,10 @@ const ProfilePage: NextPage = () => {
               }`}
             />
           </div>
+
           <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-6">
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Joined On
-              </label>
+              <label className="block text-sm font-medium mb-1">Joined On</label>
               <input
                 type="text"
                 readOnly
@@ -258,9 +271,9 @@ const ProfilePage: NextPage = () => {
           <div className="pt-4 border-t">
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || !!nameError}
               className={`w-full py-3 rounded-lg text-lg font-medium shadow ${
-                saving
+                saving || nameError
                   ? "opacity-50 cursor-not-allowed"
                   : theme === "dark"
                   ? "bg-blue-700 text-white hover:bg-blue-600"

@@ -1,18 +1,20 @@
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import {ChangeEvent,FormEvent,useEffect,useState,} from "react";
 import { NextPage } from "next";
+import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import {fetchCurrentProfile,saveProfile,clearError,} from "@/store/slices/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchCurrentProfile, saveProfile, clearError } from "@/store/slices/authSlice";
 import toast from "react-hot-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
-import Head from "next/head";
 
 const ProfilePage: NextPage = () => {
 
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { user, status: fetchStatus, error: fetchError } = useAppSelector((s) => s.auth)!;
+  const { user, status: fetchStatus, error: fetchError } = useAppSelector(
+    (s) => s.auth
+  )!;
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -20,9 +22,13 @@ const ProfilePage: NextPage = () => {
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [nameError, setNameError] = useState("");
+
   useEffect(() => {
     if (user === null) {
-      router.replace(`/auth/login?redirect=${encodeURIComponent("/profile")}`);
+      router.replace(
+        `/auth/login?redirect=${encodeURIComponent("/profile")}`
+      );
     }
   }, [user, router]);
 
@@ -49,13 +55,27 @@ const ProfilePage: NextPage = () => {
     setFile(selected);
   };
 
+  const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val === "" || /^[A-Za-z\s]+$/.test(val)) {
+      setName(val);
+      setNameError("");
+    } else {
+      setNameError("Name can only contain letters and spaces.");
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!/^[A-Za-z\s]+$/.test(name.trim())) {
+      setNameError("Name can only contain letters and spaces.");
+      return;
+    }
 
     setSaving(true);
     const formData = new FormData();
-    formData.append("name", name);
+    formData.append("name", name.trim());
     formData.append("email", email);
     if (file) {
       formData.append("profilePhoto", file);
@@ -99,7 +119,7 @@ const ProfilePage: NextPage = () => {
   return (
     <AdminLayout>
       <Head>
-        <title> Rentify | Profile</title>
+        <title>Rentify | Profile</title>
         <meta
           name="description"
           content="Manage your profile settings including name, email, and profile photo."
@@ -154,9 +174,12 @@ const ProfilePage: NextPage = () => {
                 type="text"
                 required
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={handleNameChange}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              {nameError && (
+                <p className="mt-1 text-sm text-red-500">{nameError}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
@@ -202,9 +225,9 @@ const ProfilePage: NextPage = () => {
           <div className="pt-4 border-t">
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || !!nameError}
               className={`w-full py-3 rounded-lg text-lg font-medium shadow text-white ${
-                saving
+                saving || nameError
                   ? "opacity-50 cursor-not-allowed bg-blue-600"
                   : "bg-blue-600 hover:bg-blue-700"
               }`}
