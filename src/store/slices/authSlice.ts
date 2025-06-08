@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '@/utils/api';
 import axios from 'axios';
-import { changeUserRole } from './adminSlice';
+import { changeUserRole } from '@/store/slices/adminSlice';
+
 
 export const registerUser = createAsyncThunk<
   void,

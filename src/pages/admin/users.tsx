@@ -11,7 +11,7 @@ const AdminUsersPage: NextPage = () => {
   const dispatch = useAppDispatch();
   const { users, loading, error, usersPage, usersTotalPages } = useAppSelector(
     (state) => state.admin
-  );
+  )!;
 
   const [page, setPage] = useState<number>(usersPage);
   const limit = 5;

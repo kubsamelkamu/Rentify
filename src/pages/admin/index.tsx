@@ -13,7 +13,7 @@ const AdminDashboardPage: NextPage = () => {
 
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth)!;
-  const { metrics, loading, error } = useAppSelector((state) => state.admin);
+  const { metrics, loading, error } = useAppSelector((state) => state.admin)!;
 
   useEffect(() => {
     if (user?.role === 'ADMIN') {

@@ -9,7 +9,7 @@ import Head from 'next/head';
 const AdminPropertiesPage: NextPage = () => {
 
   const dispatch = useAppDispatch();
-  const {properties,loading,error,propertiesPage,propertiesTotalPages,} = useAppSelector((state) => state.admin);
+  const {properties,loading,error,propertiesPage,propertiesTotalPages,} = useAppSelector((state) => state.admin)!;
   const [page, setPage] = useState<number>(propertiesPage);
   const limit = 5;
 
