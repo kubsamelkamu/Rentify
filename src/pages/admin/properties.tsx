@@ -1,7 +1,7 @@
 import { NextPage } from 'next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {fetchProperties,deletePropertyByAdmin} from '@/store/slices/adminSlice';
+import {fetchProperties,deletePropertyByAdmin} from '../../store/slices/adminSlices'
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Head from 'next/head';
@@ -9,7 +9,7 @@ import Head from 'next/head';
 const AdminPropertiesPage: NextPage = () => {
 
   const dispatch = useAppDispatch();
-  const {properties,loading,error,propertiesPage,propertiesTotalPages,} = useAppSelector((state) => state.admin)!;
+  const {properties,loading,error,propertiesPage,propertiesTotalPages,} = useAppSelector((state) => state.admin);
   const [page, setPage] = useState<number>(propertiesPage);
   const limit = 5;
 

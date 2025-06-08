@@ -1,7 +1,7 @@
 import { NextPage } from 'next';
 import { useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchMetrics } from '@/store/slices/adminSlice';
+import { fetchMetrics } from '../../store/slices/adminSlices'
 import  AdminLayout from '@/components/admin/AdminLayout';
 import { motion } from 'framer-motion';
 import {Users as UsersIcon,Home as HomeIcon,CalendarCheck as BookingsIcon,Star as ReviewsIcon,
@@ -13,7 +13,7 @@ const AdminDashboardPage: NextPage = () => {
 
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth)!;
-  const { metrics, loading, error } = useAppSelector((state) => state.admin)!;
+  const { metrics, loading, error } = useAppSelector((state) => state.admin);
 
   useEffect(() => {
     if (user?.role === 'ADMIN') {
