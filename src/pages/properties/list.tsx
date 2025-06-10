@@ -1,23 +1,8 @@
-// src/pages/properties/list.tsx
-
 import { NextPage } from 'next';
 import Head from 'next/head';
-import {
-  useState,
-  FormEvent,
-  ChangeEvent,
-  useEffect,
-  useContext,
-} from 'react';
+import {useState,FormEvent,ChangeEvent,useEffect,useContext,} from 'react';
 import { useRouter } from 'next/router';
-import {
-  BedDouble,
-  Bath,
-  Home,
-  MapPin,
-  Tag,
-  ImageIcon,
-} from 'lucide-react';
+import {BedDouble,Bath,Home,MapPin,Tag,ImageIcon,} from 'lucide-react';
 import Image from 'next/image';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createProperty, Property } from '@/store/slices/propertySlice';
@@ -27,6 +12,7 @@ import UserLayout from '@/components/userLayout/Layout';
 import { ThemeContext } from '@/components/context/ThemeContext';
 
 const NewPropertyPage: NextPage = () => {
+  
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { theme } = useContext(ThemeContext)!;

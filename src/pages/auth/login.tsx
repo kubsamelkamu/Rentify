@@ -4,20 +4,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { loginUser, clearError } from '@/store/slices/authSlice';
+import { loginUser, clearError, resendVerification} from '@/store/slices/authSlice';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
-interface LoginResponse {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: 'TENANT' | 'LANDLORD' | 'ADMIN';
-  };
-  token: string;
-}
-
 export default function LoginPage() {
+
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { loading, error: apiError } = useAppSelector((state) => state.auth);
@@ -27,6 +18,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
+  const [resent, setResent] = useState(false);
 
   useEffect(() => {
     dispatch(clearError());
@@ -42,31 +34,17 @@ export default function LoginPage() {
     }
 
     try {
-      const rawPayload = await dispatch(
-        loginUser({ email, password })
-      ).unwrap();
-
-      const payload: LoginResponse = {
-        ...rawPayload,
-        user: {
-          ...rawPayload.user,
-          role: rawPayload.user.role as 'TENANT' | 'LANDLORD' | 'ADMIN',
-        },
-      };
-
-      const returnedUser = payload.user;
-
-      if (returnedUser.role === 'ADMIN') {
+      const { token, user } = await dispatch(loginUser({ email, password })).unwrap();
+      // redirect logic
+      if (user.role === 'ADMIN') {
         router.push('/admin');
-        return;
+      } else {
+        router.push(redirect ? decodeURIComponent(redirect) : '/properties');
       }
-
-      const destination = redirect
-        ? decodeURIComponent(redirect)
-        : '/properties';
-      router.push(destination);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
+    } catch (err: any) {
+      if (err.message === 'Please verify your email before logging in.') {
+        setFormError(err.message);
+      } else if (err instanceof Error) {
         setFormError(err.message);
       } else {
         setFormError('Login failed. Please try again.');
@@ -74,8 +52,17 @@ export default function LoginPage() {
     }
   };
 
+  const handleResend = async () => {
+    try {
+      await dispatch(resendVerification({ email }));
+      setResent(true);
+    } catch {
+      // ignore
+    }
+  };
+
   return (
-    <>
+    <>  
       <Head>
         <title>Login | Rentify</title>
         <meta
@@ -105,12 +92,25 @@ export default function LoginPage() {
             </h2>
 
             {(formError || apiError) && (
-              <p className="text-red-500 text-sm mb-4 text-center">
-                {formError || apiError}
-              </p>
+              <div className="text-center mb-4">
+                <p className="text-red-500 text-sm">{formError || apiError}</p>
+                {formError === 'Please verify your email before logging in.' && (
+                  <p className="mt-2 text-sm">
+                    Didn’t receive verification email?{' '}
+                    <button
+                      onClick={handleResend}
+                      className="text-purple-600 hover:underline font-medium"
+                      disabled={resent}
+                    >
+                      {resent ? 'Email Sent' : 'Resend Email'}
+                    </button>
+                  </p>
+                )}
+              </div>
             )}
 
             <form onSubmit={handleLogin} className="space-y-6">
+              {/* Email and Password fields unchanged */}
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Mail className="mr-2 text-indigo-500" size={18} /> Email Address
@@ -166,7 +166,7 @@ export default function LoginPage() {
                 </Link>
               </p>
               <p className="text-sm text-gray-600">
-                Don&apos;t have an account?{' '}
+                Don’t have an account?{' '}
                 <Link
                   href="/auth/register"
                   className="text-purple-600 hover:underline font-medium"

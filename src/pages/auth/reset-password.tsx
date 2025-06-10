@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Mail } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
+  
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
