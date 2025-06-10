@@ -3,31 +3,7 @@ import api from '@/utils/api';
 import axios from 'axios';
 import { changeUserRole } from './adminSlices';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'TENANT' | 'LANDLORD' | 'ADMIN';
-  profilePhoto?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
 
-interface AuthState {
-  user: User | null;
-  token: string | null;
-  status: 'idle' | 'loading' | 'succeeded' | 'failed';
-  error: string | null;
-  loading: boolean;
-}
-
-const initialState: AuthState = {
-  user: null,
-  token: null,
-  status: 'idle',
-  error: null,
-  loading: false,
-};
 
 export const registerUser = createAsyncThunk<
   void,
