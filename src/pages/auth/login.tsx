@@ -3,28 +3,26 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { loginUser, clearError, resendVerification} from '@/store/slices/authSlice';
+import { useAppDispatch } from '@/store/hooks';
+import { loginUser, clearError } from '@/store/slices/authSlice';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
-
+  
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { loading, error: apiError } = useAppSelector((state) => state.auth);
   const { redirect } = router.query as { redirect?: string };
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [resent, setResent] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [formError, setFormError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
 
-  const handleLogin = async (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError('');
 
@@ -32,37 +30,30 @@ export default function LoginPage() {
       setFormError('Please enter both email and password.');
       return;
     }
+    setLoading(true);
 
     try {
-      const { token, user } = await dispatch(loginUser({ email, password })).unwrap();
-      // redirect logic
+      const { user } = await dispatch(loginUser({ email, password })).unwrap();
       if (user.role === 'ADMIN') {
         router.push('/admin');
       } else {
         router.push(redirect ? decodeURIComponent(redirect) : '/properties');
       }
-    } catch (err: any) {
-      if (err.message === 'Please verify your email before logging in.') {
-        setFormError(err.message);
+    } catch (err: unknown) {
+      if (typeof err === 'string') {
+        setFormError(err);
       } else if (err instanceof Error) {
         setFormError(err.message);
       } else {
         setFormError('Login failed. Please try again.');
       }
-    }
-  };
-
-  const handleResend = async () => {
-    try {
-      await dispatch(resendVerification({ email }));
-      setResent(true);
-    } catch {
-      // ignore
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <>  
+    <>
       <Head>
         <title>Login | Rentify</title>
         <meta
@@ -91,26 +82,7 @@ export default function LoginPage() {
               Welcome back!
             </h2>
 
-            {(formError || apiError) && (
-              <div className="text-center mb-4">
-                <p className="text-red-500 text-sm">{formError || apiError}</p>
-                {formError === 'Please verify your email before logging in.' && (
-                  <p className="mt-2 text-sm">
-                    Didn’t receive verification email?{' '}
-                    <button
-                      onClick={handleResend}
-                      className="text-purple-600 hover:underline font-medium"
-                      disabled={resent}
-                    >
-                      {resent ? 'Email Sent' : 'Resend Email'}
-                    </button>
-                  </p>
-                )}
-              </div>
-            )}
-
             <form onSubmit={handleLogin} className="space-y-6">
-              {/* Email and Password fields unchanged */}
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Mail className="mr-2 text-indigo-500" size={18} /> Email Address
@@ -146,7 +118,9 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-
+              {formError && (
+                <p className="text-sm text-red-600 text-center">{formError}</p>
+              )}
               <button
                 type="submit"
                 disabled={loading}
@@ -155,11 +129,10 @@ export default function LoginPage() {
                 {loading ? 'Logging in…' : 'Login'}
               </button>
             </form>
-
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600">
                 <Link
-                  href="/auth/reset-password"
+                  href="/auth/forgot-password"
                   className="text-purple-600 hover:underline font-medium"
                 >
                   Forgot your password?

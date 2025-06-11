@@ -8,11 +8,10 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { registerUser } from '@/store/slices/authSlice';
 
 export default function RegisterPage() {
-
+  
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { loading, error: apiError } = useAppSelector((state) => state.auth);
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,7 +42,12 @@ export default function RegisterPage() {
     try {
       const result = await dispatch(registerUser({ name: name.trim(), email, password }));
       if (registerUser.fulfilled.match(result)) {
-        router.push('/auth/login');
+        setName('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setAgree(false);
+        router.push('/auth/verify-email-info');
       }
     } catch (err: unknown) {
       if (err instanceof Error) setFormError(err.message);
@@ -83,7 +87,6 @@ export default function RegisterPage() {
               Rentify
             </h1>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* ─── Full Name ─────────────────────────────────────────────────────── */}
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <User className="mr-2 text-indigo-500" size={18} /> Full Name
@@ -97,8 +100,6 @@ export default function RegisterPage() {
                   className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                 />
               </div>
-
-              {/* ─── Email ───────────────────────────────────────────────────────────── */}
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Mail className="mr-2 text-indigo-500" size={18} /> Email Address
@@ -112,8 +113,6 @@ export default function RegisterPage() {
                   className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                 />
               </div>
-
-              {/* ─── Password ───────────────────────────────────────────────────────── */}
               <div className="relative">
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Lock className="mr-2 text-indigo-500" size={18} /> Password
@@ -135,8 +134,6 @@ export default function RegisterPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-
-              {/* ─── Confirm Password ───────────────────────────────────────────────── */}
               <div className="relative">
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Lock className="mr-2 text-indigo-500" size={18} /> Confirm Password
@@ -158,8 +155,6 @@ export default function RegisterPage() {
                   {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-
-              {/* ─── Terms & Conditions Checkbox ────────────────────────────────────── */}
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -174,13 +169,9 @@ export default function RegisterPage() {
                   </Link>
                 </label>
               </div>
-
-              {/* ─── Error Message ───────────────────────────────────────────────────── */}
               {(formError || getApiErrorMessage()) && (
                 <p className="text-red-500 text-sm">{formError || getApiErrorMessage()}</p>
               )}
-
-              {/* ─── Submit Button ──────────────────────────────────────────────────── */}
               <button
                 type="submit"
                 disabled={!agree || loading}
@@ -188,8 +179,6 @@ export default function RegisterPage() {
               >
                 {loading ? 'Registering…' : 'Create Account'}
               </button>
-
-              {/* ─── Already Have Account? ─────────────────────────────────────────── */}
               <p className="text-sm text-gray-600 text-center">
                 Already have an account?{' '}
                 <Link href="/auth/login" className="text-purple-600 hover:underline font-medium">
