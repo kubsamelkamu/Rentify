@@ -1,84 +1,156 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import api from '@/utils/api';
 import axios from 'axios';
-import { changeUserRole } from './adminSlices';
+import api from '@/utils/api';
+import { changeUserRole } from './adminSlice';
 
+type Role = 'TENANT' | 'LANDLORD' | 'ADMIN';
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  profilePhoto?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
-export const registerUser = createAsyncThunk<
-  void,
-  { name: string; email: string; password: string },
-  { rejectValue: string }
->('auth/register', async (userData, { rejectWithValue }) => {
-  try {
-    await api.post('/api/auth/register', userData);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return rejectWithValue(message);
+type AuthState = {
+  user: User | null;
+  token: string | null;
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  loading: boolean;
+  error: string | null;
+};
+
+const initialState: AuthState = {
+  user: null,
+  token: null,
+  status: 'idle',
+  loading: false,
+  error: null,
+};
+
+export const registerUser = createAsyncThunk<void, { name: string; email: string; password: string }, { rejectValue: string }>(
+  'auth/registerUser',
+  async (userData, { rejectWithValue }) => {
+    try {
+      await api.post('/api/auth/register', userData);
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Registration failed';
+      return rejectWithValue(message);
+    }
   }
-});
+);
 
 export const loginUser = createAsyncThunk<
   { user: User; token: string },
   { email: string; password: string },
   { rejectValue: string }
->('auth/login', async (credentials, { rejectWithValue }) => {
-  try {
-    const response = await api.post('/api/auth/login', credentials);
-    return response.data;
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return rejectWithValue(message);
-  }
-});
-
-export const resendVerification = createAsyncThunk<
-  void,
-  { email: string },
-  { rejectValue: string }
->('auth/resendVerification', async ({ email }, { rejectWithValue }) => {
-  try {
-    await api.post('/api/auth/resend-verification', { email });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return rejectWithValue(message);
-  }
-});
-
-export const fetchCurrentProfile = createAsyncThunk<
-  User,
-  void,
-  { rejectValue: string }
->('auth/fetchProfile', async (_, { rejectWithValue }) => {
-  try {
-    const response = await api.get('/api/users/me');
-    return response.data;
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      return rejectWithValue(err.response?.data?.error || err.message);
+>(
+  'auth/loginUser',
+  async (credentials, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/api/auth/login', credentials);
+      return response.data as { user: User; token: string };
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Login failed';
+      return rejectWithValue(message);
     }
-    return rejectWithValue(err instanceof Error ? err.message : 'Failed to fetch profile');
   }
-});
+);
 
-// 5️⃣ Save Profile
-export const saveProfile = createAsyncThunk<
-  User,
-  FormData,
-  { rejectValue: string }
->('auth/saveProfile', async (formData, { rejectWithValue }) => {
-  try {
-    const response = await api.put('/api/users/me', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data;
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      return rejectWithValue(err.response?.data?.error || err.message);
+export const fetchCurrentProfile = createAsyncThunk<User, void, { rejectValue: string }>(
+  'auth/fetchProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/api/users/me');
+      return response.data as User;
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Failed to fetch profile';
+      return rejectWithValue(message);
     }
-    return rejectWithValue(err instanceof Error ? err.message : 'Failed to save profile');
   }
-});
+);
+
+export const saveProfile = createAsyncThunk<User, FormData, { rejectValue: string }>(
+  'auth/saveProfile',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/api/users/me', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data as User;
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Failed to save profile';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const forgotPassword = createAsyncThunk<void, string, { rejectValue: string }>(
+  'auth/forgotPassword',
+  async (email, { rejectWithValue }) => {
+    try {
+      await api.post('/api/auth/forgot-password', { email });
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Failed to send reset email';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk<void, { token: string; newPassword: string }, { rejectValue: string }>(
+  'auth/resetPassword',
+  async (data, { rejectWithValue }) => {
+    try {
+      await api.post('/api/auth/reset-password', data);
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Password reset failed';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const verifyEmail = createAsyncThunk<void, string, { rejectValue: string }>(
+  'auth/verifyEmail',
+  async (token, { rejectWithValue }) => {
+    try {
+      await api.get(`/api/auth/verify?token=${token}`);
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Email verification failed';
+      return rejectWithValue(message);
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: 'auth',
@@ -88,8 +160,8 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.status = 'idle';
-      state.error = null;
       state.loading = false;
+      state.error = null;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
     },
@@ -100,93 +172,72 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.status = 'succeeded';
+      state.loading = false;
       state.error = null;
       localStorage.setItem('token', action.payload.token);
       localStorage.setItem('user', JSON.stringify(action.payload.user));
     },
   },
   extraReducers: (builder) => {
-    builder
-      // registerUser
-      .addCase(registerUser.pending, (state) => {
-        state.status = 'loading';
-        state.error = null;
-      })
-      .addCase(registerUser.fulfilled, (state) => {
-        state.status = 'succeeded';
-      })
-      .addCase(registerUser.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload || action.error.message || 'Registration failed';
-      })
+    builder.addCase(registerUser.pending, (state) => { state.status = 'loading'; state.loading = true; state.error = null; });
+    builder.addCase(registerUser.fulfilled, (state) => { state.status = 'succeeded'; state.loading = false; });
+    builder.addCase(registerUser.rejected, (state, action) => { state.status = 'failed'; state.loading = false; state.error = action.payload || 'Registration failed'; });
 
-      // loginUser
-      .addCase(loginUser.pending, (state) => {
-        state.status = 'loading';
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(loginUser.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-      })
-      .addCase(loginUser.rejected, (state, action) => {
-        state.status = 'failed';
-        state.loading = false;
-        state.error = action.payload || action.error.message || 'Login failed';
-      })
+    builder.addCase(loginUser.pending, (state) => { state.status = 'loading'; state.loading = true; state.error = null; });
+    builder.addCase(loginUser.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      state.loading = false;
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      localStorage.setItem('token', action.payload.token);
+      localStorage.setItem('user', JSON.stringify(action.payload.user));
+    });
+    builder.addCase(loginUser.rejected, (state, action) => { state.status = 'failed'; state.loading = false; state.error = action.payload || 'Login failed'; });
 
-      // resendVerification
-      .addCase(resendVerification.pending, (state) => {
-        state.status = 'loading';
-        state.error = null;
-      })
-      .addCase(resendVerification.fulfilled, (state) => {
-        state.status = 'succeeded';
-      })
-      .addCase(resendVerification.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload || action.error.message || 'Resend failed';
-      })
+    builder.addCase(fetchCurrentProfile.pending, (state) => { state.status = 'loading'; state.loading = true; state.error = null; });
+    builder.addCase(fetchCurrentProfile.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      state.loading = false;
+      state.user = action.payload;
+      localStorage.setItem('user', JSON.stringify(action.payload));
+    });
+    builder.addCase(fetchCurrentProfile.rejected, (state, action) => { state.status = 'failed'; state.loading = false; state.error = action.payload || 'Failed to load profile'; });
 
-      // fetchCurrentProfile
-      .addCase(fetchCurrentProfile.pending, (state) => {
-        state.status = 'loading';
-        state.error = null;
-      })
-      .addCase(fetchCurrentProfile.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.user = action.payload;
-      })
-      .addCase(fetchCurrentProfile.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload || action.error.message || 'Fetch profile failed';
-      })
+    builder.addCase(saveProfile.pending, (state) => { state.status = 'loading'; state.loading = true; state.error = null; });
+    builder.addCase(saveProfile.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      state.loading = false;
+      state.user = action.payload;
+      localStorage.setItem('user', JSON.stringify(action.payload));
+    });
+    builder.addCase(saveProfile.rejected, (state, action) => { state.status = 'failed'; state.loading = false; state.error = action.payload || 'Failed to save profile'; });
 
-      // saveProfile
-      .addCase(saveProfile.pending, (state) => {
-        state.status = 'loading';
-        state.error = null;
-      })
-      .addCase(saveProfile.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.user = action.payload;
-      })
-      .addCase(saveProfile.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload || action.error.message || 'Save profile failed';
-      })
+    builder.addCase(forgotPassword.pending, (state) => { state.loading = true; state.error = null; });
+    builder.addCase(forgotPassword.fulfilled, (state) => { state.loading = false; });
+    builder.addCase(forgotPassword.rejected, (state, action) => { state.loading = false; state.error = action.payload || 'Failed to send reset email'; });
 
-      // changeUserRole
-      .addCase(changeUserRole.fulfilled, (state) => {
-        state.status = 'succeeded';
-      })
-      .addCase(changeUserRole.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload || action.error.message || 'Role update failed';
-      });
+    builder.addCase(resetPassword.pending, (state) => { state.loading = true; state.error = null; });
+    builder.addCase(resetPassword.fulfilled, (state) => { state.loading = false; });
+    builder.addCase(resetPassword.rejected, (state, action) => { state.loading = false; state.error = action.payload || 'Password reset failed'; });
+
+    builder.addCase(verifyEmail.pending, (state) => { state.loading = true; state.error = null; });
+    builder.addCase(verifyEmail.fulfilled, (state) => { state.loading = false; });
+    builder.addCase(verifyEmail.rejected, (state, action) => { state.loading = false; state.error = action.payload || 'Email verification failed'; });
+
+    builder.addCase(changeUserRole.fulfilled, (state, action) => {
+      const { user: updatedUser, token: updatedToken } = action.payload;
+      if (state.user && state.user.id === updatedUser.id) {
+        state.token = updatedToken;
+        localStorage.setItem('token', updatedToken);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      state.error = null;
+      state.loading = false;
+    });
+    builder.addCase(changeUserRole.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload || 'Failed to update role';
+    });
   },
 });
 
