@@ -1,6 +1,7 @@
+import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
+import api from '@/utils/api';
 
 export default function VerifyPage() {
     
@@ -12,15 +13,15 @@ export default function VerifyPage() {
     if (!token) return;
     async function verify() {
       try {
-        const res = await fetch(`/api/auth/verify?token=${token}`);
-        const data = await res.json();
-        if (res.ok) {
+        const res = await api.get(`/api/auth/verify?token=${token}`);
+        const data = res.data;
+        if (res) {
           setStatus('Your email has been verified successfully! Redirecting to login...');
           setTimeout(() => router.push('/auth/login'), 3000);
         } else {
           setStatus(data.error || 'Verification failed.');
         }
-      } catch (err) {
+      } catch{
         setStatus('An error occurred during verification.');
       }
     }
