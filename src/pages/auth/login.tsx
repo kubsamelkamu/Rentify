@@ -3,36 +3,26 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useAppDispatch } from '@/store/hooks';
 import { loginUser, clearError } from '@/store/slices/authSlice';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
-interface LoginResponse {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: 'TENANT' | 'LANDLORD' | 'ADMIN';
-  };
-  token: string;
-}
-
 export default function LoginPage() {
+  
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { loading, error: apiError } = useAppSelector((state) => state.auth);
   const { redirect } = router.query as { redirect?: string };
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [formError, setFormError] = useState('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [formError, setFormError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
 
-  const handleLogin = async (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError('');
 
@@ -40,37 +30,25 @@ export default function LoginPage() {
       setFormError('Please enter both email and password.');
       return;
     }
+    setLoading(true);
 
     try {
-      const rawPayload = await dispatch(
-        loginUser({ email, password })
-      ).unwrap();
-
-      const payload: LoginResponse = {
-        ...rawPayload,
-        user: {
-          ...rawPayload.user,
-          role: rawPayload.user.role as 'TENANT' | 'LANDLORD' | 'ADMIN',
-        },
-      };
-
-      const returnedUser = payload.user;
-
-      if (returnedUser.role === 'ADMIN') {
+      const { user } = await dispatch(loginUser({ email, password })).unwrap();
+      if (user.role === 'ADMIN') {
         router.push('/admin');
-        return;
+      } else {
+        router.push(redirect ? decodeURIComponent(redirect) : '/properties');
       }
-
-      const destination = redirect
-        ? decodeURIComponent(redirect)
-        : '/properties';
-      router.push(destination);
     } catch (err: unknown) {
-      if (err instanceof Error) {
+      if (typeof err === 'string') {
+        setFormError(err);
+      } else if (err instanceof Error) {
         setFormError(err.message);
       } else {
         setFormError('Login failed. Please try again.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,12 +81,6 @@ export default function LoginPage() {
             <h2 className="text-2xl font-semibold text-gray-700 mb-4 text-center">
               Welcome back!
             </h2>
-
-            {(formError || apiError) && (
-              <p className="text-red-500 text-sm mb-4 text-center">
-                {formError || apiError}
-              </p>
-            )}
 
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
@@ -146,7 +118,9 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-
+              {formError && (
+                <p className="text-sm text-red-600 text-center">{formError}</p>
+              )}
               <button
                 type="submit"
                 disabled={loading}
@@ -155,18 +129,17 @@ export default function LoginPage() {
                 {loading ? 'Logging in…' : 'Login'}
               </button>
             </form>
-
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600">
                 <Link
-                  href="/auth/reset-password"
+                  href="/auth/forgot-password"
                   className="text-purple-600 hover:underline font-medium"
                 >
                   Forgot your password?
                 </Link>
               </p>
               <p className="text-sm text-gray-600">
-                Don&apos;t have an account?{' '}
+                Don’t have an account?{' '}
                 <Link
                   href="/auth/register"
                   className="text-purple-600 hover:underline font-medium"

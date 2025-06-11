@@ -2,7 +2,7 @@ import { NextPage } from 'next';
 import { useEffect, useContext, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { changeUserRole } from '@/store/slices/adminSlices';
+import { changeUserRole } from '@/store/slices/adminSlice';
 import { ThemeContext } from '@/components/context/ThemeContext';
 import UserLayout from '@/components/userLayout/Layout';
 import toast from 'react-hot-toast';

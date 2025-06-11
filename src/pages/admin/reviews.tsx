@@ -4,14 +4,14 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import toast from 'react-hot-toast'
 import AdminLayout from '@/components/admin/AdminLayout'
 import Head from 'next/head'
-import { fetchReviews, deleteReview } from '../../store/slices/adminSlices'
+import { fetchReviews, deleteReview } from '@/store/slices/adminSlice'
 
 const PAGE_SIZE = 5
 
 const AdminReviewsPage: NextPage = () => {
   
   const dispatch = useAppDispatch()
-  const { reviews, loading, error, reviewsPage, reviewsTotalPages } = useAppSelector((state) => state.admin);
+  const { reviews, loading, error, reviewsPage, reviewsTotalPages } = useAppSelector((state) => state.admin)!;
   const [currentPage, setCurrentPage] = useState(reviewsPage)
   const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({})
 
