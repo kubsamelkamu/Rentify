@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import toast from 'react-hot-toast'
 import AdminLayout from '@/components/admin/AdminLayout'
 import Head from 'next/head'
-import { fetchReviews, deleteReview } from '@/store/slices/adminSlice'
+import { fetchReviews, deleteReview } from '@/store/slices/adminslice'
 
 const PAGE_SIZE = 5
 

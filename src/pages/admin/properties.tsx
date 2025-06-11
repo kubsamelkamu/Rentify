@@ -1,7 +1,7 @@
 import { NextPage } from 'next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {fetchProperties,deletePropertyByAdmin} from '@/store/slices/adminSlice';
+import {fetchProperties,deletePropertyByAdmin} from '@/store/slices/adminslice';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Head from 'next/head';

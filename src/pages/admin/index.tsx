@@ -1,7 +1,7 @@
 import { NextPage } from 'next';
 import { useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchMetrics } from '@/store/slices/adminSlice';
+import { fetchMetrics } from '@/store/slices/adminslice';
 import  AdminLayout from '@/components/admin/AdminLayout';
 import { motion } from 'framer-motion';
 import {Users as UsersIcon,Home as HomeIcon,CalendarCheck as BookingsIcon,Star as ReviewsIcon,
