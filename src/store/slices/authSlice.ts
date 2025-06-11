@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import api from '@/utils/api';
-import { changeUserRole } from '@/store/slices/adminSlice';
+import { changeUserRole } from '@/store/slices/adminslice';
 
 type Role = 'TENANT' | 'LANDLORD' | 'ADMIN';
 
