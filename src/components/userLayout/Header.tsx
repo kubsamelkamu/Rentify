@@ -29,16 +29,12 @@ const baseNavItems: NavItem[] = [
 ];
 
 export default function Header() {
-
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState<Record<string, boolean>>({});
-  const [selectedLang, setSelectedLang] = useState('EN');
 
   const { user } = useAppSelector((state) => state.auth)!;
   const dispatch = useAppDispatch();
   const { theme, toggleTheme } = useContext(ThemeContext)!;
-
-  const languages = ['EN', 'AM', 'OR'];
 
   const navItems = useMemo<NavItem[]>(() => {
     const items: NavItem[] = baseNavItems.map((item) => {
@@ -153,29 +149,6 @@ export default function Header() {
             )}
           </button>
 
-          <div className="relative group">
-            <button className="px-3 py-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
-              {selectedLang}
-            </button>
-            <div className="absolute right-0 mt-2 w-28 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <div
-                className={`${
-                  theme === 'light' ? 'bg-white border border-gray-100' : 'bg-gray-800 border border-gray-700'
-                } rounded-lg`}
-              >
-                {languages.map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => setSelectedLang(lang)}
-                    className="block w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    {lang}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
           {user ? (
             <div className="relative group">
               {avatarSrc ? (
@@ -204,7 +177,7 @@ export default function Header() {
                   href="/profile"
                   className="block px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
-                  Your Profile
+                  Profile
                 </Link>
                 <button
                   onClick={() => dispatch(logout())}
@@ -255,8 +228,6 @@ export default function Header() {
           </button>
         </div>
       </div>
-
-      {/* Mobile submenu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -312,32 +283,13 @@ export default function Header() {
               ))}
 
               <div>
-                <p className="text-sm font-medium mb-2">Language</p>
-                <div className="flex space-x-2">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang}
-                      onClick={() => setSelectedLang(lang)}
-                      className={`flex-1 px-3 py-2 text-sm text-center rounded ${
-                        selectedLang === lang
-                          ? 'bg-blue-600 text-white'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
-                    >
-                      {lang}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
                 {user ? (
                   <>
                     <Link
                       href="/profile"
                       className="block px-2 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
                     >
-                      Your Profile
+                     Profile
                     </Link>
                     <button
                       onClick={() => dispatch(logout())}
