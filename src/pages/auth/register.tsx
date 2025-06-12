@@ -2,16 +2,16 @@ import { useState, FormEvent, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Loader } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { registerUser } from '@/store/slices/authSlice';
 
 export default function RegisterPage() {
-  
+
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { loading, error: apiError } = useAppSelector((state) => state.auth);
+  const { loading: apiLoading, error: apiError } = useAppSelector((state) => state.auth);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,6 +20,7 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [agree, setAgree] = useState(false);
   const [formError, setFormError] = useState('');
+  const [delaying, setDelaying] = useState(false);
 
   useEffect(() => {
     dispatch({ type: 'auth/clearError' });
@@ -28,26 +29,32 @@ export default function RegisterPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFormError('');
+
     const nameRegex = /^[A-Za-z\s]+$/;
     if (!nameRegex.test(name.trim())) {
       setFormError('Full Name must contain only letters and spaces.');
-      return;
+      return; 
     }
-
     if (password !== confirmPassword) {
       setFormError('Passwords do not match.');
       return;
     }
 
     try {
-      const result = await dispatch(registerUser({ name: name.trim(), email, password }));
+      const result = await dispatch(
+        registerUser({ name: name.trim(), email, password })
+      );
       if (registerUser.fulfilled.match(result)) {
         setName('');
         setEmail('');
         setPassword('');
         setConfirmPassword('');
         setAgree(false);
-        router.push('/auth/verify-email-info');
+
+        setDelaying(true);
+        setTimeout(() => {
+          router.push('/auth/verify-email-info');
+        }, 10000);
       }
     } catch (err: unknown) {
       if (err instanceof Error) setFormError(err.message);
@@ -60,6 +67,8 @@ export default function RegisterPage() {
     if (apiError.includes('400')) return 'Registration failed: Email already exists.';
     return apiError;
   };
+
+  const btnDisabled = !agree || apiLoading || delaying;
 
   return (
     <>
@@ -127,7 +136,7 @@ export default function RegisterPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
+                  onClick={() => setShowPassword((p) => !p)}
                   className="absolute inset-y-0 right-3 flex items-center text-gray-500"
                   aria-label="Toggle password visibility"
                 >
@@ -148,7 +157,7 @@ export default function RegisterPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirm((prev) => !prev)}
+                  onClick={() => setShowConfirm((p) => !p)}
                   className="absolute inset-y-0 right-3 flex items-center text-gray-500"
                   aria-label="Toggle confirm password visibility"
                 >
@@ -159,29 +168,61 @@ export default function RegisterPage() {
                 <input
                   type="checkbox"
                   checked={agree}
-                  onChange={() => setAgree((prev) => !prev)}
+                  onChange={() => setAgree((p) => !p)}
                   className="h-4 w-4 text-purple-600 border-gray-300 rounded"
                 />
                 <label className="ml-2 text-sm text-gray-600">
                   I agree to the{' '}
-                  <Link href="/terms&conditions" className="font-medium text-purple-600 underline">
+                  <Link
+                    href="/terms&conditions"
+                    className="font-medium text-purple-600 underline"
+                  >
                     Terms &amp; Conditions
                   </Link>
                 </label>
               </div>
+
               {(formError || getApiErrorMessage()) && (
-                <p className="text-red-500 text-sm">{formError || getApiErrorMessage()}</p>
+                <p className="text-red-500 text-sm">
+                  {formError || getApiErrorMessage()}
+                </p>
               )}
+
               <button
                 type="submit"
-                disabled={!agree || loading}
-                className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-600 disabled:opacity-50 transition-all"
+                disabled={btnDisabled}
+                className={`
+                  w-full py-3 px-6 rounded-xl text-white font-semibold
+                  transition-all duration-300
+                  ${
+                    delaying
+                      ? 'bg-purple-500 cursor-not-allowed animate-pulse'
+                      : apiLoading
+                      ? 'bg-purple-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-700 hover:to-indigo-600'
+                  }
+                  ${ (apiLoading || delaying) && 'opacity-75' }
+                `}
               >
-                {loading ? 'Registering…' : 'Create Account'}
+                {delaying ? (
+                  <span className="flex items-center justify-center">
+                    <Loader className="h-5 w-5 mr-2 animate-spin" />
+                  </span>
+                ) : apiLoading ? (
+                    <span className="flex items-center justify-center">
+                    <Loader className="h-5 w-5 mr-2 animate-spin" />
+                  </span>
+                ) : (
+                  'Create Account'
+                )}
               </button>
+
               <p className="text-sm text-gray-600 text-center">
                 Already have an account?{' '}
-                <Link href="/auth/login" className="text-purple-600 hover:underline font-medium">
+                <Link
+                  href="/auth/login"
+                  className="text-purple-600 hover:underline font-medium"
+                >
                   Login
                 </Link>
               </p>
