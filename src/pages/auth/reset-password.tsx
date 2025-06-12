@@ -145,7 +145,7 @@ export default function ResetPasswordPage() {
                   >
                     {loading ? (
                       <span className="flex items-center justify-center">
-                        <Loader2 className="animate-spin mr-2" size={18} /> Resetting…
+                        <Loader2 className="animate-spin mr-2" size={18} /> 
                       </span>
                     ) : (
                       'Reset Password'

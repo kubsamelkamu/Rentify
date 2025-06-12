@@ -12,7 +12,7 @@ export default function VerifyEmailInfoPage() {
       <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg text-center">
         <h2 className="text-2xl font-bold text-indigo-600 mb-4">Verify Your Email</h2>
         <p className="text-gray-600 mb-6">
-          we&apos;ve sent a verification link to your email address. Please check your inbox and click the link to verify your account.
+          we&apos;ll send a verification link to your email address. Please check your inbox and click the link to verify your account.
         </p>
         <Link
           href="/auth/login"
