@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAppDispatch } from '@/store/hooks';
 import { loginUser, clearError } from '@/store/slices/authSlice';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader } from 'lucide-react';
 
 export default function LoginPage() {
   
@@ -126,7 +126,11 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-600 disabled:opacity-50 transition-all"
               >
-                {loading ? 'Logging in…' : 'Login'}
+                {loading ? 
+                <span className="flex items-center justify-center">
+                    <Loader className="h-5 w-5 mr-2 animate-spin" />
+                </span>: 
+                'Login'}
               </button>
             </form>
             <div className="mt-6 text-center space-y-2">
