@@ -165,10 +165,10 @@ const LandlordBookingsPage: NextPage = () => {
                     <td className="p-3">{b.status}</td>
                     <td className="p-3">
                       {b.status === 'CONFIRMED' && b.payment?.status === 'PENDING' && (
-                        <span className="text-yellow-500">Awaiting Payment</span>
+                         <span className="text-green-500 font-medium">Paid</span>
                       )}
                       {b.payment?.status === 'SUCCESS' && (
-                        <span className="text-green-500 font-medium">Paid</span>
+                        <span className="text-yellow-500 font-medium">Awaiting Payment</span>
                       )}
                       {!(b.status === 'CONFIRMED' && b.payment?.status === 'PENDING') &&
                         !(b.payment?.status === 'SUCCESS') && <span>—</span>}
