@@ -1,0 +1,267 @@
+[
+  {
+    "id": 1,
+    "question": "How do I reset my password?",
+    "questionKeywords": ["reset", "password", "forgot"],
+    "answer": "To reset your password, click \"Forgot Password\" on the login page and follow the email link."
+  },
+  {
+    "id": 2,
+    "question": "How do I register for a new account?",
+    "questionKeywords": ["register", "sign up", "create account"],
+    "answer": "To register, click the \"Sign Up\" button on the homepage, fill in your details, and verify your email when prompted."
+  },
+  {
+    "id": 3,
+    "question": "How do I verify my email address?",
+    "questionKeywords": ["verify", "email", "confirmation"],
+    "answer": "After registration, check your inbox for a verification email and click the confirmation link to activate your account."
+  },
+  {
+    "id": 4,
+    "question": "How do I log out safely?",
+    "questionKeywords": ["logout", "sign out", "exit"],
+    "answer": "To log out, click on your profile icon in the header and select \"Logout\". This will end your session securely."
+  },
+  {
+    "id": 5,
+    "question": "How do I create a new property listing?",
+    "questionKeywords": ["create", "new listing", "add property"],
+    "answer": "As a landlord, navigate to \"My Properties\" and click \"List Property\". Fill in the required information and save your listing."
+  },
+  {
+    "id": 6,
+    "question": "Which fields are mandatory when creating a listing?",
+    "questionKeywords": ["mandatory", "required fields", "listing fields"],
+    "answer": "Mandatory fields include title, description, price, location, number of bedrooms, and at least one image."
+  },
+  {
+    "id": 7,
+    "question": "How do I edit or delete my property listing?",
+    "questionKeywords": ["edit", "delete", "update", "remove listing"],
+    "answer": "Go to \"My Properties\", select the property, then click \"Edit\" to update details or \"Delete\" to remove the listing permanently."
+  },
+  {
+    "id": 8,
+    "question": "What image formats and sizes are supported for listings?",
+    "questionKeywords": ["image formats", "supported", "size", "upload"],
+    "answer": "We support JPG, PNG, and GIF formats. Images should be under 5 MB and at least 800×600 pixels for best display."
+  },
+  {
+    "id": 9,
+    "question": "How can I search for properties by city or area?",
+    "questionKeywords": ["search", "city", "area", "location"],
+    "answer": "Use the search bar at the top of the page: type a city or neighborhood and press Enter to see available listings."
+  },
+  {
+    "id": 10,
+    "question": "How do I filter listings by price range, bedrooms, or bathrooms?",
+    "questionKeywords": ["filter", "price", "bedrooms", "bathrooms"],
+    "answer": "Open the filter panel, set your desired price range, number of bedrooms, and bathrooms, then click \"Apply Filters\"."
+  },
+  {
+    "id": 11,
+    "question": "How do I sort search results by rent amount or date listed?",
+    "questionKeywords": ["sort", "rent amount", "date"],
+    "answer": "In the sort dropdown above the results, choose \"Price: Low to High\", \"Price: High to Low\", or \"Newest Listings\"."
+  },
+  {
+    "id": 12,
+    "question": "How do I navigate between pages of results?",
+    "questionKeywords": ["navigate", "pages", "pagination", "next page"],
+    "answer": "Use the pagination controls at the bottom of the listing page to go to the next or previous results."
+  },
+  {
+    "id": 13,
+    "question": "How do I send a message to a landlord?",
+    "questionKeywords": ["send message", "message landlord", "contact landlord"],
+    "answer": "On a property’s detail page, click \"Chat with Landlord\" and type your message in the chat widget."
+  },
+  {
+    "id":14,
+    "question":"how to comminicate with landlord.",
+    "questionKeywords":["chate with landlord","real time communction","means of communication"],
+    "answer":"Yes you can communicate with properties owner at real-time.Just go to Properties Deatail page and initiate chat by clicking on Chat With Owner Button."
+  },
+  {
+    "id": 15,
+    "question": "How do I know if I have unread messages?",
+    "questionKeywords": ["unread messages", "notifications", "new messages"],
+    "answer": "A red badge on the chat icon indicates the number of unread messages in your inbox."
+  },
+  {
+    "id": 16,
+    "question": "How do I request a booking for specific dates?",
+    "questionKeywords": ["request booking", "book dates", "select dates"],
+    "answer": "On the property detail page, select your desired dates in the calendar widget and click \"Request Booking\"."
+  },
+  {
+    "id": 17,
+    "question": "How can landlords approve or reject booking requests?",
+    "questionKeywords": ["approve booking", "reject booking", "booking requests"],
+    "answer": "Landlords can see incoming requests in \"My Bookings\" and click \"Approve\" or \"Reject\" next to each pending request."
+  },
+  {
+    "id": 18,
+    "question": "Where can I view my upcoming and past bookings?",
+    "questionKeywords": ["upcoming bookings", "past bookings", "view bookings"],
+    "answer": "Go to \"My Bookings\" in the main menu to see both upcoming and completed stays."
+  },
+  {
+    "id": 19,
+    "question": "How do I make a payment via Chapa?",
+    "questionKeywords": ["Chapa", "payment", "pay"],
+    "answer": "After approving a booking, click \"Pay Now\" and follow the Chapa payment flow to complete your transaction."
+  },
+  {
+    "id": 20,
+    "question": "How can I check the status of my payment?",
+    "questionKeywords": ["check payment", "payment status"],
+    "answer": "Payment status is displayed next to each booking in \"My Bookings\" under the \"Status\" column."
+  },
+  {
+    "id": 21,
+    "question": "What happens if a payment fails?",
+    "questionKeywords": ["payment fails", "transaction failed", "error"],
+    "answer": "If a payment fails, you'll see a \"Failed\" status; you can retry via the \"Pay Now\" button or contact support."
+  },
+  {
+    "id": 22,
+    "question": "Where can I view my payment history?",
+    "questionKeywords": ["payment history", "past payments","payment"],
+    "answer": "All past transactions are listed in \"My Booking page\""
+  },
+  {
+    "id": 23,
+    "question": "How do I submit a review after a completed booking?",
+    "questionKeywords": ["submit review", "write review", "rating"],
+    "answer": "After your stay, go to \"Properties Detail\", and click \"Leave Review\" to rate and comment."
+  },
+  {
+    "id": 24,
+    "question": "Can I edit or delete my review?",
+    "questionKeywords": ["edit review", "delete review"],
+    "answer": "Yes—navigate to the Properties under \"My Reviews\" and choose \"Edit\" or \"Delete\" next to your entry."
+  },
+  {
+    "id": 25,
+    "question": "How are average ratings calculated and displayed?",
+    "questionKeywords": ["average rating", "calculate rating", "display rating"],
+    "answer": "The average rating is the mean of all star ratings for a property and is shown next to the property title."
+  },
+  {
+    "id": 26,
+    "question": "Hello, who are you?",
+    "questionKeywords": ["hello", "hi", "who are you","Hello Rentify Assistant" , "hello there","rentify", "assistant","who is this","how you help" ,"what is your name"],
+    "answer": "Hi there! I'm the Rentify Assistant, here to help you find, book, and manage rentals on Rentify. Ask me anything!"
+  },
+  {
+    "id": 27,
+    "question": "What can you do?",
+    "questionKeywords": ["what can you do", "features", "help"],
+    "answer": "I can answer questions about searching listings, booking properties, payment status, account settings, and more. How can I assist you today?"
+  },
+  {
+    "id": 28,
+    "question": "Thank you",
+    "questionKeywords": ["thank you", "thanks","tnx","alright","well"],
+    "answer": "You're welcome! If you have any more questions, just let me know."
+  },
+  {
+    "id":29,
+    "question":"How to list properties",
+    "questionKeywords":["how to list properties","how to upload properties","post properties"],
+    "answer":"To list your properties you will fill those neccessary fields to list properties and upload a good quality image of your properties,all feilds must be validated must be propoperties you own."
+  },
+  {
+    "id":"30",
+    "question":"How to rent properties",
+    "questionKeywords":["how to rent properties","rent properties","i want to rent properties"],
+    "answer":"To rent a properties , browse properties,see detail and book it , and the system will let you now your booking status in app and also via email.Then pay for it accordingly."
+  },
+  {
+    "id":"31",
+    "question":"How to Pay for Properties.",
+    "questionKeywords":["which payment method allowed"," pay.","fee","how can i pay for properties","payment method","payment gateway"],
+    "answer":"Once you notified your that your booking is confirmed , you can pay for the properties via our integrated payment gateway."
+  },
+  {
+    "id":32,
+    "question":"which payment method is acceptable",
+    "questionKeywords":["payment method","payment gateway"],
+    "answer":"The system support Chapa Ethiopian Payment Gateway."
+  },
+    {
+    "id": 33,
+    "question": "How are you?",
+    "questionKeywords": ["how are you", "how's it going","what is your name","who are you","how are you doing","how do you do","how is it going"],
+    "answer": "I'm Rentify assistance and  doing great, thank you! How can I assist you with Rentify today?"
+  },
+  {
+    "id": 34,
+    "question": "What is Rentify?",
+    "questionKeywords": ["what is rentify", "about rentify"],
+    "answer": "Rentify is a house renting platform that allows you to search, book, and manage rental properties easily."
+  },
+  {
+    "id": 35,
+    "question": "Can I change language?",
+    "questionKeywords": ["change language", "language option"],
+    "answer": "Yes, you can switch languages by clicking on the language selector in the header and choosing your preferred language."
+  },
+  {
+    "id": 36,
+    "question": "How do I contact support?",
+    "questionKeywords": ["contact support", "support team", "help"],
+    "answer": "You can reach our support team by clicking the chat icon or sending an email to support@rentify.com."
+  },
+  {
+    "id": 37,
+    "question": "Do you have mobile app?",
+    "questionKeywords": ["mobile app", "app available"],
+    "answer": "Currently Rentify is accessible via web. We're working on mobile apps—stay tuned for updates!"
+  },
+  {
+    "id": 38,
+    "question": "Is Rentify free?",
+    "questionKeywords": ["free rentify", "cost"],
+    "answer": "Using Rentify to search and book properties is free for users. Landlords can also  list their properties for free. However, a small service fee may apply for certain transactions."
+  },
+  {
+    "id": 39,
+    "question": "Can I save favorite properties?",
+    "questionKeywords": ["favorite properties", "save listing", "wishlist"],
+    "answer": "Yes, click the heart icon on any listing to add it to your favorites for easy access later."
+  },
+  {
+    "id": 40,
+    "question": "What is cancellation policy?",
+    "questionKeywords": ["cancellation policy", "cancel booking"],
+    "answer": "You can cancel bookings within 24 hours for a full refund. After that, cancellation fees may apply."
+  },
+  {
+    "id": 41,
+    "question": "Can I list multiple properties?",
+    "questionKeywords": ["multiple listings", "list multiple properties"],
+    "answer": "Absolutely—landlords can add as many properties as they like through the Properties list  dashboard."
+  },
+  {
+    "id": 42,
+    "question": "How do I change my profile photo?",
+    "questionKeywords": ["change profile photo", "update avatar"],
+    "answer": "Go to your profile settings, click the avatar, and upload a new image to update your profile photo."
+  },
+  {
+    "id": 43,
+    "question": "How do I report a problem?",
+    "questionKeywords": ["report problem", "support issue", "help me"],
+    "answer": "Use the chat widget to report any issues, or email support@rentify.com with details and we’ll resolve it ASAP."
+  },
+  {
+    "id": 44,
+    "question": "Where can I see property rules?",
+    "questionKeywords": ["property rules", "house rules", "listing rules"],
+    "answer": "House rules are listed on each property’s detail page under the Rules & Policies section."
+  }
+]
+
