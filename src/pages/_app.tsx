@@ -5,6 +5,7 @@ import { store, RootState } from '@/store/store';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/components/context/ThemeContext';
 import { connectSocket } from '@/utils/socket';
+import ChatLauncher from '@/components/chat/ChatLauncher'
 import { useEffect } from 'react';
 import { setAuth } from '@/store/slices/authSlice';
 
@@ -48,6 +49,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <SocketConnector />
         <Component {...pageProps} />
         <Toaster position="top-right" />
+         <ChatLauncher />
       </Provider>
     </ThemeProvider>
   );
