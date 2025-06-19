@@ -62,7 +62,7 @@ const PropertyBookingsPage: NextPage = () => {
 
     socket.emit('joinRoom', propertyId);
 
-    const handleNewBooking = (newBooking: any) => {
+    const handleNewBooking = (newBooking:unknown) => {
       // Optionally, validate or map newBooking to Booking type here
       setBookings((prev) => [newBooking as Booking, ...prev]);
       toast.success('New booking request received!');
