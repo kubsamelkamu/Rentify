@@ -1,184 +1,138 @@
+// src/pages/admin/index.tsx
 import { NextPage } from 'next';
 import { useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchMetrics } from '@/store/slices/adminSlice';
-import  AdminLayout from '@/components/admin/AdminLayout';
-import { motion } from 'framer-motion';
-import {Users as UsersIcon,Home as HomeIcon,CalendarCheck as BookingsIcon,Star as ReviewsIcon,
-Currency as RevenueIcon,
-} from 'lucide-react';
+import AdminLayout from '@/components/admin/AdminLayout';
+import socket, { connectSocket } from '@/utils/socket';
 import Head from 'next/head';
+import { motion } from 'framer-motion';
+import {
+  Users as UsersIcon,
+  Home as HomeIcon,
+  CalendarCheck as BookingsIcon,
+  Star as ReviewsIcon,
+  Currency as RevenueIcon,
+} from 'lucide-react';
 
 const AdminDashboardPage: NextPage = () => {
-
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth)!;
-  const { metrics, loading, error } = useAppSelector((state) => state.admin)!;
+  const { user } = useAppSelector((s) => s.auth)!;
+  const { metrics, loading, error } = useAppSelector((s) => s.admin)!;
 
   useEffect(() => {
-    if (user?.role === 'ADMIN') {
-      dispatch(fetchMetrics());
-    }
+    if (user?.role !== 'ADMIN') return;
+
+    // initial load
+    dispatch(fetchMetrics());
+
+    // connect socket once authenticated
+    const token = localStorage.getItem('token') || '';
+    connectSocket(token);
+
+    // unified refresh callback
+    const refresh = () => dispatch(fetchMetrics());
+
+    // ── User events ──
+    socket.on('admin:newUser', refresh);
+    socket.on('admin:updateUser', refresh);
+    socket.on('admin:deleteUser', refresh);
+
+    // ── Property events ──
+    socket.on('admin:newProperty', refresh);
+    socket.on('admin:updateProperty', refresh);
+    socket.on('admin:deleteProperty', refresh);
+
+    // ── Booking events ──
+    socket.on('newBooking', refresh);
+    socket.on('bookingStatusUpdate', refresh);
+    socket.on('paymentStatusUpdated', refresh);
+
+    // ── Review events ──
+    socket.on('admin:newReview', refresh);
+    socket.on('admin:updateReview', refresh);
+    socket.on('admin:deleteReview', refresh);
+
+    return () => {
+      // clean up all listeners
+      socket.off('admin:newUser', refresh);
+      socket.off('admin:updateUser', refresh);
+      socket.off('admin:deleteUser', refresh);
+
+      socket.off('admin:newProperty', refresh);
+      socket.off('admin:updateProperty', refresh);
+      socket.off('admin:deleteProperty', refresh);
+
+      socket.off('newBooking', refresh);
+      socket.off('bookingStatusUpdate', refresh);
+      socket.off('paymentStatusUpdated', refresh);
+
+      socket.off('admin:newReview', refresh);
+      socket.off('admin:updateReview', refresh);
+      socket.off('admin:deleteReview', refresh);
+    };
   }, [dispatch, user]);
 
-  const todayString = useMemo(() => {
-    const opts: Intl.DateTimeFormatOptions = {
+  const today = useMemo(() => {
+    return new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    };
-    return new Date().toLocaleDateString('en-US', opts);
+    });
   }, []);
 
   return (
     <AdminLayout>
       <Head>
-        <title> Rentify | Dashboard</title>
-        <meta
-          name="description"
-          content="Admin dashboard for Rentify to manage properties, bookings, and users."
-        />
-        <link rel="canonical" href="/admin" />
+        <title>Rentify | Dashboard</title>
+        <meta name="description" content="Admin dashboard overview" />
       </Head>
-      <div className="flex flex-col space-y-6">
-        <div
-          className="
-            flex flex-col sm:flex-row sm:items-center sm:justify-between
-            p-15 rounded-lg shadow
-            bg-blue-600
-          "
-        >
+
+      <div className="space-y-6">
+        <div className="bg-blue-600 p-6 rounded-lg text-white flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-white">
-              Hello, {user?.name || 'Admin'} 👋
-            </h1>
-            <p className="mt-1 text-sm text-blue-100">
-              Today is {todayString}
-            </p>
+            <h1 className="text-2xl font-bold">Hello, {user?.name} 👋</h1>
+            <p className="mt-1">Today is {today}</p>
           </div>
-          <div className="mt-4 sm:mt-0">
-            <h2 className="text-lg font-semibold text-white">
-              Dashboard Overview
-            </h2>
-          </div>
+          <h2 className="text-lg font-semibold">Overview</h2>
         </div>
+
         {loading && (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center py-10">
             <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full" />
           </div>
         )}
+
         {error && (
-          <p className="text-red-500 text-center">
-            Error loading metrics: {error}
-          </p>
+          <p className="text-red-500 text-center">{error}</p>
         )}
+
         {!loading && metrics && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              whileHover={{ scale: 1.03 }}
-              className="
-                p-6 rounded-lg transition-shadow duration-200
-                bg-blue-600 text-white hover:shadow-xl
-                cursor-pointer
-              "
-            >
-              <div className="flex items-center space-x-3">
-                <UsersIcon className="w-6 h-6 text-white" />
-                <h3 className="text-sm font-medium text-white">
-                  Total Users
-                </h3>
-              </div>
-              <p className="mt-4 text-3xl font-extrabold">
-                {metrics.totalUsers.toLocaleString()}
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              whileHover={{ scale: 1.03 }}
-              className="
-                p-6 rounded-lg transition-shadow duration-200
-                bg-blue-600 text-white hover:shadow-xl
-                cursor-pointer
-              "
-            >
-              <div className="flex items-center space-x-3">
-                <HomeIcon className="w-6 h-6 text-white" />
-                <h3 className="text-sm font-medium text-white">
-                  Total Properties
-                </h3>
-              </div>
-              <p className="mt-4 text-3xl font-extrabold">
-                {metrics.totalProperties.toLocaleString()}
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              whileHover={{ scale: 1.03 }}
-              className="
-                p-6 rounded-lg transition-shadow duration-200
-                bg-blue-600 text-white hover:shadow-xl
-                cursor-pointer
-              "
-            >
-              <div className="flex items-center space-x-3">
-                <BookingsIcon className="w-6 h-6 text-white" />
-                <h3 className="text-sm font-medium text-white">
-                  Total Bookings
-                </h3>
-              </div>
-              <p className="mt-4 text-3xl font-extrabold">
-                {metrics.totalBookings.toLocaleString()}
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              whileHover={{ scale: 1.03 }}
-              className="
-                p-6 rounded-lg transition-shadow duration-200
-                bg-blue-600 text-white hover:shadow-xl
-                cursor-pointer
-              "
-            >
-              <div className="flex items-center space-x-3">
-                <ReviewsIcon className="w-6 h-6 text-white" />
-                <h3 className="text-sm font-medium text-white">
-                  Total Reviews
-                </h3>
-              </div>
-              <p className="mt-4 text-3xl font-extrabold">
-                {metrics.totalReviews.toLocaleString()}
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              whileHover={{ scale: 1.03 }}
-              className="
-                p-6 rounded-lg transition-shadow duration-200
-                bg-blue-600 text-white hover:shadow-xl
-                cursor-pointer
-              "
-            >
-              <div className="flex items-center space-x-3">
-                <RevenueIcon className="w-6 h-6 text-white" />
-                <h3 className="text-sm font-medium text-white">
-                  Total Revenue (ETB)
-                </h3>
-              </div>
-              <p className="mt-4 text-3xl font-extrabold">
-                {metrics.totalRevenue.toLocaleString()}
-              </p>
-            </motion.div>
+            {[
+              { label: 'Total Users',    value: metrics.totalUsers,     icon: UsersIcon },
+              { label: 'Properties',     value: metrics.totalProperties, icon: HomeIcon },
+              { label: 'Bookings',       value: metrics.totalBookings,   icon: BookingsIcon },
+              { label: 'Reviews',        value: metrics.totalReviews,    icon: ReviewsIcon },
+              { label: 'Revenue (ETB)',  value: metrics.totalRevenue,    icon: RevenueIcon },
+            ].map(({ label, value, icon: Icon }, i) => (
+              <motion.div
+                key={label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ scale: 1.03 }}
+                className="bg-blue-600 p-6 rounded-lg text-white hover:shadow-xl cursor-pointer transition-shadow"
+              >
+                <div className="flex items-center space-x-3">
+                  <Icon className="w-6 h-6" />
+                  <h3 className="text-sm font-medium">{label}</h3>
+                </div>
+                <p className="mt-4 text-3xl font-extrabold">
+                  {value.toLocaleString()}
+                </p>
+              </motion.div>
+            ))}
           </div>
         )}
       </div>

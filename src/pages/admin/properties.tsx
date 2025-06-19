@@ -1,117 +1,134 @@
+// src/pages/admin/properties.tsx
 import { NextPage } from 'next';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {fetchProperties,deletePropertyByAdmin} from '@/store/slices/adminSlice';
+import {
+  fetchProperties,
+  deletePropertyByAdmin,
+} from '@/store/slices/adminSlice';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Head from 'next/head';
+import socket, { connectSocket } from '@/utils/socket';
+
+const PAGE_SIZE = 5;
 
 const AdminPropertiesPage: NextPage = () => {
-
   const dispatch = useAppDispatch();
-  const {properties,loading,error,propertiesPage,propertiesTotalPages,} = useAppSelector((state) => state.admin)!;
-  const [page, setPage] = useState<number>(propertiesPage);
-  const limit = 5;
+  const {
+    properties,
+    loading,
+    error,
+    propertiesPage,
+    propertiesTotalPages,
+  } = useAppSelector((s) => s.admin)!;
 
-  useEffect(() => {
-    dispatch(fetchProperties({ page, limit }));
-  }, [dispatch, page]);
-
+  const [page, setPage] = useState<number>(propertiesPage || 1);
   const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({});
 
-  const handleDeleteProperty = async (propertyId: string) => {
-    setDeletingIds((m) => ({ ...m, [propertyId]: true }));
-    try {
-      await dispatch(deletePropertyByAdmin(propertyId)).unwrap();
-      toast.success('Property deleted');
+  const reload = useCallback(() => {
+    dispatch(fetchProperties({ page, limit: PAGE_SIZE }));
+  }, [dispatch, page]);
 
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token') || '';
+    connectSocket(token);
+
+    socket.on('admin:newProperty', reload);
+    socket.on('admin:updateProperty', reload);
+    socket.on('admin:deleteProperty', reload);
+
+    return () => {
+      socket.off('admin:newProperty', reload);
+      socket.off('admin:updateProperty', reload);
+      socket.off('admin:deleteProperty', reload);
+    };
+  }, [reload]);
+
+  useEffect(() => {
+    setPage(propertiesPage);
+  }, [propertiesPage]);
+
+  const handleDelete = async (id: string) => {
+    setDeletingIds((m) => ({ ...m, [id]: true }));
+    try {
+      await dispatch(deletePropertyByAdmin(id)).unwrap();
+      toast.success('Property deleted');
       if (properties.length === 1 && page > 1) {
-        setPage(page - 1);
+        setPage((p) => p - 1);
       } else {
-        dispatch(fetchProperties({ page, limit }));
+        reload();
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error('Could not delete property: ' + msg);
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error('Delete failed: ' + message);
     } finally {
       setDeletingIds((m) => {
-        const next = { ...m };
-        delete next[propertyId];
-        return next;
+        const c = { ...m };
+        delete c[id];
+        return c;
       });
     }
   };
 
-  const handlePrev = () => {
-    if (page > 1) setPage(page - 1);
-  };
-  const handleNext = () => {
-    if (page < propertiesTotalPages) setPage(page + 1);
-  };
+  const prev = () => page > 1 && setPage((p) => p - 1);
+  const next = () => page < propertiesTotalPages && setPage((p) => p + 1);
 
   return (
     <AdminLayout>
       <Head>
-        <title> Rentify | Properties</title>
-        <meta
-          name="description"
-          content="Admin page to manage properties for Rentify."
-        />
-        <link rel="canonical" href="/admin/properties" />
+        <title>Rentify | Manage Properties</title>
+        <meta name="description" content="Admin property management" />
       </Head>
-      <div className="flex flex-col space-y-6">
-        <h1 className="text-2xl font-bold text-blue-600">
-          Manage Properties
-        </h1>
-
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-blue-600">Manage Properties</h1>
         {loading && (
           <div className="flex justify-center py-10">
             <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full" />
           </div>
         )}
+        {error && <p className="text-red-500">{error}</p>}
+        {!loading && properties.length === 0 && <p>No properties found.</p>}
 
-        {error && <p className="text-red-500">Error loading properties: {error}</p>}
-        {!loading && !error && properties.length === 0 && (
-          <p className="text-gray-600">No properties found.</p>
-        )}
-
-        {!loading && !error && properties.length > 0 && (
+        {properties.length > 0 && (
           <>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
               <table className="min-w-full divide-y divide-gray-200 bg-white text-gray-900">
-                <thead className="bg-blue-600">
+                <thead className="bg-blue-600 text-white">
                   <tr>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Title</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">City</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Rent (per mo)</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Landlord ID</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Created On</th>
-                    <th className="px-4 py-2 text-center text-sm font-medium text-white">Actions</th>
+                    <th className="px-4 py-2 text-left">Title</th>
+                    <th className="px-4 py-2 text-left">City</th>
+                    <th className="px-4 py-2 text-left">Rent/mo</th>
+                    <th className="px-4 py-2 text-left">Landlord</th>
+                    <th className="px-4 py-2 text-left">Created</th>
+                    <th className="px-4 py-2 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {properties.map((p) => (
                     <tr key={p.id}>
-                      <td className="px-4 py-3 whitespace-nowrap">{p.title}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">{p.city}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        {p.rentPerMonth.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">{p.landlordId}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-4 py-3">{p.title}</td>
+                      <td className="px-4 py-3">{p.city}</td>
+                      <td className="px-4 py-3">${p.rentPerMonth}</td>
+                      <td className="px-4 py-3">{p.landlordId}</td>
+                      <td className="px-4 py-3">
                         {new Date(p.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <td className="px-4 py-3 text-center">
                         <button
-                          onClick={() => handleDeleteProperty(p.id)}
+                          onClick={() => handleDelete(p.id)}
                           disabled={deletingIds[p.id]}
                           className={`px-3 py-1 rounded text-sm font-medium transition ${
                             deletingIds[p.id]
-                              ? 'opacity-50 cursor-not-allowed bg-red-400 text-white'
-                              : 'bg-red-500 hover:bg-red-600 text-white'
+                              ? 'bg-red-400 cursor-not-allowed'
+                              : 'bg-red-600 hover:bg-red-700 text-white'
                           }`}
                         >
-                          {deletingIds[p.id] ? 'Deleting…' : 'Delete'}
+                          {deletingIds[p.id] ? '…' : 'Delete'}
                         </button>
                       </td>
                     </tr>
@@ -119,31 +136,22 @@ const AdminPropertiesPage: NextPage = () => {
                 </tbody>
               </table>
             </div>
-            <div className="flex items-center justify-between px-4 py-3 bg-blue-600 rounded-b-lg">
+
+            <div className="flex justify-between bg-blue-600 text-white px-4 py-2 rounded-b-lg">
               <button
-                onClick={handlePrev}
+                onClick={prev}
                 disabled={page <= 1}
-                className={`px-3 py-1 rounded ${
-                  page <= 1
-                    ? 'opacity-50 cursor-not-allowed bg-blue-400 text-white'
-                    : 'bg-blue-800 hover:bg-blue-700 text-white'
-                }`}
+                className="px-3 py-1 rounded bg-blue-800 disabled:opacity-50"
               >
                 Previous
               </button>
-
-              <span className="text-white">
+              <span>
                 Page {page} of {propertiesTotalPages}
               </span>
-
               <button
-                onClick={handleNext}
+                onClick={next}
                 disabled={page >= propertiesTotalPages}
-                className={`px-3 py-1 rounded ${
-                  page >= propertiesTotalPages
-                    ? 'opacity-50 cursor-not-allowed bg-blue-400 text-white'
-                    : 'bg-blue-800 hover:bg-blue-700 text-white'
-                }`}
+                className="px-3 py-1 rounded bg-blue-800 disabled:opacity-50"
               >
                 Next
               </button>
