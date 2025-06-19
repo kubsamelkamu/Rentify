@@ -1,41 +1,32 @@
 import { io, Socket } from 'socket.io-client';
-import { Booking } from '@/store/slices/bookingSlice';
+import { User, Property, Booking, Review } from '@/store/slices/adminSlice';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-export interface ChatMessage {
-  id: string;
-  content: string;
-  sender: { id: string; name: string };
-  createdAt: string;
-  sentAt?: string;
-  deleted?: boolean;
-  editedAt?: string;
-}
-
 export interface ServerToClientEvents {
-  newMessage: (msg: ChatMessage) => void;
-  messageDeleted: (payload: { messageId: string }) => void;
-  messageEdited: (msg: ChatMessage) => void;
-  typingStatus: (payload: { userId: string; isTyping: boolean }) => void;
-  presence: (payload: { userId: string; status: 'online' | 'offline' }) => void;
+  'admin:newUser': (user: User) => void;
+  'admin:updateUser': (user: User) => void;
+  'admin:deleteUser': (userId: string) => void;
+
+  'admin:newProperty': (property: Property) => void;
+  'admin:updateProperty': (property: Property) => void;
+  'admin:deleteProperty': (propertyId: string) => void;
+
+  'admin:newReview': (review: Review) => void;
+  'admin:updateReview': (review: Review) => void;
+  'admin:deleteReview': (payload: { propertyId: string; tenantId: string }) => void;
 
   newBooking: (booking: Booking) => void;
-  bookingStatusUpdate: (booking: {
-    id: string;
-    propertyId: string;
-    tenantId: string;
-    startDate: string;
-    endDate: string;
-    status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED';
-    createdAt: string;
-    updatedAt: string;
-  }) => void;
+  bookingStatusUpdate: (booking: Booking) => void;
+  paymentStatusUpdated: (
+    payload: { bookingId: string; paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED' }
+  ) => void;
 
-  paymentStatusUpdated: (payload: {
-    bookingId: string;
-    paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED';
-  }) => void;
+  newMessage: (msg: unknown) => void;
+  messageDeleted: (payload: { messageId: string }) => void;
+  messageEdited: (msg: unknown) => void;
+  typingStatus: (payload: { userId: string; isTyping: boolean }) => void;
+  presence: (payload: { userId: string; status: 'online' | 'offline' }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -43,21 +34,17 @@ export interface ClientToServerEvents {
   leaveRoom: (room: string) => void;
   sendMessage: (
     payload: { propertyId: string; content: string },
-    ack: (msg: ChatMessage) => void
+    ack: (msg: unknown) => void
   ) => void;
   deleteMessage: (
     payload: { propertyId: string; messageId: string },
-    ack: (res: { success: boolean; error?: string }) => void
+    ack: (res: unknown) => void
   ) => void;
   editMessage: (
     payload: { propertyId: string; messageId: string; newContent: string },
-    ack: (res: { success: boolean; error?: string }) => void
+    ack: (res: unknown) => void
   ) => void;
-  typing: (payload: {
-    propertyId: string;
-    userId: string;
-    isTyping: boolean;
-  }) => void;
+  typing: (payload: { propertyId: string; userId: string; isTyping: boolean }) => void;
 }
 
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
