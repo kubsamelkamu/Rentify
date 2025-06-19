@@ -65,14 +65,16 @@ const TenantBookingsPage: NextPage = () => {
     const room = `user_${user.id}`;
     socket.emit('joinRoom', room);
 
-    const handleNewBooking = (b: Booking) => {
-      dispatch(updateBookingInStore(b));
-      toast.success(`New booking for "${b.property?.title}" created!`);
+    const handleNewBooking = (b: unknown) => {
+      const booking = b as Booking;
+      dispatch(updateBookingInStore(booking));
+      toast.success(`New booking for "${booking.property?.title}" created!`);
     };
 
-    const handleBookingUpdate = (b: Booking) => {
-      dispatch(updateBookingInStore(b));
-      toast.success(`Booking "${b.property?.title}" is now ${b.status}`);
+    const handleBookingUpdate = (b:unknown) => {
+      const booking = b as Booking;
+      dispatch(updateBookingInStore(booking));
+      toast.success(`Booking "${booking.property?.title}" is now ${booking.status}`);
     };
 
     const handlePaymentUpdate = (payload: {

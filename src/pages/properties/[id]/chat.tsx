@@ -22,7 +22,29 @@ interface RawMessage {
   editedAt?: string | Date | null;
 }
 
+interface SocketResponse {
+  success: boolean;
+  error?: string;
+}
+
+const normalizeDate = (value: unknown): string => {
+  if (typeof value === 'string') return value;
+  if (value instanceof Date) return value.toISOString();
+  return new Date().toISOString();
+};
+
+const normalizeMessage = (raw: RawMessage): Message => ({
+  id: raw.id,
+  content: raw.content,
+  sender: raw.sender,
+  createdAt: raw.createdAt ? normalizeDate(raw.createdAt) : new Date().toISOString(),
+  sentAt: raw.sentAt ? normalizeDate(raw.sentAt) : undefined,
+  deleted: raw.deleted ?? false,
+  editedAt: raw.editedAt ? normalizeDate(raw.editedAt) : undefined,
+});
+
 const PropertyChatPage: React.FC = () => {
+  
   const router = useRouter();
   const propertyId = typeof router.query.id === 'string' ? router.query.id : null;
   const dispatch = useAppDispatch();
@@ -36,12 +58,6 @@ const PropertyChatPage: React.FC = () => {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>('');
 
-  const normalizeDate = (value: unknown): string => {
-    if (typeof value === 'string') return value;
-    if (value instanceof Date) return value.toISOString();
-    return new Date().toISOString();
-  };
-
   useEffect(() => {
     if (!propertyId) return;
 
@@ -49,15 +65,7 @@ const PropertyChatPage: React.FC = () => {
       .unwrap()
       .then((prop) => {
         if (Array.isArray(prop.messages)) {
-          const normalized: Message[] = (prop.messages as RawMessage[]).map((m) => ({
-            id: m.id,
-            content: m.content,
-            sender: { id: m.sender.id, name: m.sender.name },
-            createdAt: m.createdAt ? normalizeDate(m.createdAt) : new Date().toISOString(),
-            sentAt: m.sentAt ? normalizeDate(m.sentAt) : undefined,
-            deleted: m.deleted ?? false,
-            editedAt: m.editedAt ? normalizeDate(m.editedAt) : undefined,
-          }));
+          const normalized: Message[] = (prop.messages as RawMessage[]).map(normalizeMessage);
           setMessages(normalized);
         }
       });
@@ -75,7 +83,8 @@ const PropertyChatPage: React.FC = () => {
 
   useEffect(() => {
     const onNewMessage: ServerToClientEvents['newMessage'] = (msg) => {
-      setMessages((prev) => [...prev, { ...msg, deleted: msg.deleted ?? false }]);
+      const rawMessage = msg as RawMessage;
+      setMessages((prev) => [...prev, normalizeMessage(rawMessage)]);
     };
     socket.on('newMessage', onNewMessage);
     return () => {
@@ -97,8 +106,9 @@ const PropertyChatPage: React.FC = () => {
 
   useEffect(() => {
     const onEdited: ServerToClientEvents['messageEdited'] = (updated) => {
+      const rawMessage = updated as RawMessage;
       setMessages((prev) =>
-        prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
+        prev.map((m) => (m.id === rawMessage.id ? normalizeMessage(rawMessage) : m))
       );
     };
     socket.on('messageEdited', onEdited);
@@ -164,7 +174,8 @@ const PropertyChatPage: React.FC = () => {
     (messageId: string) => {
       if (!current?.id) return;
       socket.emit('deleteMessage', { propertyId: current.id, messageId }, (res) => {
-        if (!res.success) toast.error(res.error || 'Delete failed');
+        const response = res as SocketResponse;
+        if (!response.success) toast.error(response.error || 'Delete failed');
       });
     },
     [current?.id]
@@ -183,13 +194,23 @@ const PropertyChatPage: React.FC = () => {
 
   const handleEditSave = useCallback(() => {
     if (!authUser || !current?.id || !editingMessageId) return;
-    socket.emit('editMessage', { propertyId: current.id, messageId: editingMessageId, newContent: editText }, (res) => {
-      if (!res.success) toast.error(res.error || 'Edit failed');
-      else {
-        setEditingMessageId(null);
-        setEditText('');
+    socket.emit(
+      'editMessage', 
+      { 
+        propertyId: current.id, 
+        messageId: editingMessageId, 
+        newContent: editText 
+      }, 
+      (res) => {
+        const response = res as SocketResponse;
+        if (!response.success) {
+          toast.error(response.error || 'Edit failed');
+        } else {
+          setEditingMessageId(null);
+          setEditText('');
+        }
       }
-    });
+    );
   }, [authUser, current?.id, editingMessageId, editText]);
 
   const handleEditCancel = () => {
@@ -217,7 +238,7 @@ const PropertyChatPage: React.FC = () => {
           name="description"
           content="Chat with landlords and tenants about properties, manage bookings, and discuss details in real-time."
         />
-        <link rel="canonical" href="/properties\[id]\chat" />
+        <link rel="canonical" href="/properties/[id]/chat" />
       </Head>
       <div
         className={`min-h-screen p-6 ${
@@ -228,7 +249,6 @@ const PropertyChatPage: React.FC = () => {
           <Link href={`/properties/${current.id}`} className="text-blue-500 hover:underline">
             ← Back to property
           </Link>
-
           <div className="flex items-center my-2">
             <span
               className={`h-2 w-2 rounded-full mr-2 ${
@@ -239,7 +259,6 @@ const PropertyChatPage: React.FC = () => {
             />
             <span className="font-semibold">{current.landlord?.name}</span>
           </div>
-
           <div className="border rounded-lg flex flex-col h-[60vh] overflow-hidden">
             <MessageList
               messages={messages}
@@ -252,11 +271,9 @@ const PropertyChatPage: React.FC = () => {
               onEditSave={handleEditSave}
               onEditCancel={handleEditCancel}
             />
-
             {otherTyping.length > 0 && (
               <div className="p-2 italic text-gray-500">Someone is typing…</div>
             )}
-
             <ChatInput
               propertyId={current.id}
               onSend={handleSend}

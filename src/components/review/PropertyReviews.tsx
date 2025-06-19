@@ -1,7 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {fetchPropertyReviews,upsertReview,deleteReview,Review,} from '@/store/slices/reviewSlice';
+import {
+  fetchPropertyReviews,
+  upsertReview,
+  deleteReview,
+  Review,
+} from '@/store/slices/reviewSlice';
 import toast from 'react-hot-toast';
+import socket, { connectSocket } from '@/utils/socket';
 
 interface PropertyReviewsProps {
   propertyId: string;
@@ -9,16 +15,41 @@ interface PropertyReviewsProps {
 
 export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
   const dispatch = useAppDispatch();
-  const bucket = useAppSelector((state) => state.reviews.reviewsByProperty[propertyId]);
-  const upsertLoading = useAppSelector((state) => state.reviews.upsertLoading);
-  const deleteLoading = useAppSelector((state) => state.reviews.deleteLoading);
+  const bucket = useAppSelector(
+    (state) => state.reviews.reviewsByProperty[propertyId]
+  );
+  const upsertLoading = useAppSelector((s) => s.reviews.upsertLoading);
+  const deleteLoading = useAppSelector((s) => s.reviews.deleteLoading);
 
-  const [page, setPage] = useState<number>(1);
-  const limit = 5; 
+  const [page, setPage] = useState(1);
+  const limit = 5;
 
-  useEffect(() => {
+  const loadPage = useCallback(() => {
     dispatch(fetchPropertyReviews({ propertyId, page, limit }));
   }, [dispatch, propertyId, page]);
+
+  useEffect(() => {
+    loadPage();
+  }, [loadPage]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token') || '';
+    connectSocket(token);
+
+    const room = `reviews_${propertyId}`;
+    socket.emit('joinRoom', room);
+
+    socket.on('admin:newReview', loadPage);
+    socket.on('admin:updateReview', loadPage);
+    socket.on('admin:deleteReview', loadPage);
+
+    return () => {
+      socket.emit('leaveRoom', room);
+      socket.off('admin:newReview', loadPage);
+      socket.off('admin:updateReview', loadPage);
+      socket.off('admin:deleteReview', loadPage);
+    };
+  }, [propertyId, loadPage]);
 
   const [rating, setRating] = useState(5);
   const [title, setTitle] = useState('');
@@ -27,13 +58,15 @@ export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await dispatch(upsertReview({ propertyId, rating, title, comment })).unwrap();
+      await dispatch(
+        upsertReview({ propertyId, rating, title, comment })
+      ).unwrap();
       toast.success('Review saved');
       setTitle('');
       setComment('');
-      dispatch(fetchPropertyReviews({ propertyId, page, limit }));
+      loadPage();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = err instanceof Error ? err.message : 'Could not save review';
       toast.error(message);
     }
   };
@@ -42,9 +75,9 @@ export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
     try {
       await dispatch(deleteReview(propertyId)).unwrap();
       toast.success('Review deleted');
-      dispatch(fetchPropertyReviews({ propertyId, page, limit }));
+      loadPage();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = err instanceof Error ? err.message : 'Could not delete review';
       toast.error(message);
     }
   };
@@ -57,7 +90,7 @@ export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
   }
 
   const totalCount = bucket.count;
-  const totalPages = Math.ceil(totalCount / limit);
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 
   return (
     <div>
@@ -69,9 +102,12 @@ export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
         {bucket.reviews.map((r: Review) => (
           <li key={r.id} className="border p-4 rounded-md">
             <p className="font-medium">
-              {r.tenant.name} • {new Date(r.createdAt).toLocaleDateString()}
+              {r.tenant.name} •{' '}
+              {new Date(r.createdAt).toLocaleDateString()}
             </p>
-            <p>⭐ {r.rating} • {r.title}</p>
+            <p>
+              ⭐ {r.rating} • {r.title}
+            </p>
             <p className="mt-1">{r.comment}</p>
           </li>
         ))}
@@ -79,6 +115,7 @@ export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
           <li className="text-gray-500">No reviews on this page.</li>
         )}
       </ul>
+
       <div className="flex items-center space-x-2 mb-6">
         <button
           onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -88,7 +125,7 @@ export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
           Previous
         </button>
         <span>
-          Page {page} of {totalPages === 0 ? 1 : totalPages}
+          Page {page} of {totalPages}
         </span>
         <button
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -98,13 +135,15 @@ export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
           Next
         </button>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-4 mb-8">
         <h3 className="text-lg font-medium">Write a Review</h3>
+
         <label className="block">
           Rating:
           <select
             value={rating}
-            onChange={(e) => setRating(Number(e.target.value))}
+            onChange={(e) => setRating(+e.target.value)}
             className="ml-2 border rounded px-2"
           >
             {[5, 4, 3, 2, 1].map((n) => (
@@ -114,6 +153,7 @@ export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
             ))}
           </select>
         </label>
+
         <div>
           <label className="block text-sm">Title</label>
           <input
@@ -124,6 +164,7 @@ export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
             className="w-full border rounded px-3 py-2"
           />
         </div>
+
         <div>
           <label className="block text-sm">Comment</label>
           <textarea
@@ -134,6 +175,7 @@ export default function PropertyReviews({ propertyId }: PropertyReviewsProps) {
             className="w-full border rounded px-3 py-2"
           />
         </div>
+
         <button
           type="submit"
           disabled={upsertLoading}

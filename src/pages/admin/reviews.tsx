@@ -1,66 +1,95 @@
-import { NextPage } from 'next'
-import { useEffect, useState } from 'react'
-import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import toast from 'react-hot-toast'
-import AdminLayout from '@/components/admin/AdminLayout'
-import Head from 'next/head'
-import { fetchReviews, deleteReview } from '@/store/slices/adminSlice'
+// src/pages/admin/reviews.tsx
+import { NextPage } from 'next';
+import { useEffect, useState, useCallback } from 'react';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import toast from 'react-hot-toast';
+import AdminLayout from '@/components/admin/AdminLayout';
+import Head from 'next/head';
+import socket, { connectSocket } from '@/utils/socket';
+import { fetchReviews, deleteReview } from '@/store/slices/adminSlice';
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 5;
 
 const AdminReviewsPage: NextPage = () => {
-  
-  const dispatch = useAppDispatch()
-  const { reviews, loading, error, reviewsPage, reviewsTotalPages } = useAppSelector((state) => state.admin)!;
-  const [currentPage, setCurrentPage] = useState(reviewsPage)
-  const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({})
+  const dispatch = useAppDispatch();
+  const {
+    reviews,
+    loading,
+    error,
+    reviewsPage,
+    reviewsTotalPages,
+  } = useAppSelector((state) => state.admin)!;
+
+  const [currentPage, setCurrentPage] = useState<number>(reviewsPage);
+  const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({});
+
+  const reload = useCallback(() => {
+    dispatch(fetchReviews({ page: currentPage, limit: PAGE_SIZE }));
+  }, [dispatch, currentPage]);
 
   useEffect(() => {
-    dispatch(fetchReviews({ page: currentPage, limit: PAGE_SIZE }))
-  }, [dispatch, currentPage])
+    reload();
+  }, [reload]);
 
   useEffect(() => {
-    setCurrentPage(reviewsPage)
-  }, [reviewsPage])
+    setCurrentPage(reviewsPage);
+  }, [reviewsPage]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token') || '';
+    connectSocket(token);
+
+    socket.on('admin:newReview', reload);
+    socket.on('admin:updateReview', reload);
+    socket.on('admin:deleteReview', reload);
+
+    return () => {
+      socket.off('admin:newReview', reload);
+      socket.off('admin:updateReview', reload);
+      socket.off('admin:deleteReview', reload);
+    };
+  }, [reload]);
 
   const handleDelete = async (reviewId: string) => {
-    setDeletingIds((m) => ({ ...m, [reviewId]: true }))
+    setDeletingIds((m) => ({ ...m, [reviewId]: true }));
     try {
-      await dispatch(deleteReview(reviewId)).unwrap()
-      toast.success('Review deleted')
-      dispatch(fetchReviews({ page: currentPage, limit: PAGE_SIZE }))
+      await dispatch(deleteReview(reviewId)).unwrap();
+      toast.success('Review deleted');
+      reload();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error('Could not delete review: ' + msg)
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error('Could not delete review: ' + message);
     } finally {
       setDeletingIds((m) => {
-        const next = { ...m }
-        delete next[reviewId]
-        return next
-      })
+        const next = { ...m };
+        delete next[reviewId];
+        return next;
+      });
     }
-  }
+  };
 
   const handlePrev = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1)
-  }
+    if (currentPage > 1) setCurrentPage((p) => p - 1);
+  };
 
   const handleNext = () => {
-    if (currentPage < reviewsTotalPages) setCurrentPage(currentPage + 1)
-  }
+    if (currentPage < reviewsTotalPages) setCurrentPage((p) => p + 1);
+  };
 
   return (
     <AdminLayout>
       <Head>
-        <title> Rentify | Review </title>
+        <title>Rentify | Reviews</title>
         <meta
           name="description"
           content="Admin page to manage reviews for Rentify."
         />
-        <link rel="canonical" href="/admin/review" />
+        <link rel="canonical" href="/admin/reviews" />
       </Head>
+
       <div className="flex flex-col space-y-6">
         <h1 className="text-2xl font-bold text-blue-600">Manage Reviews</h1>
+
         {loading && (
           <div className="flex justify-center py-10">
             <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full" />
@@ -68,22 +97,24 @@ const AdminReviewsPage: NextPage = () => {
         )}
 
         {error && <p className="text-red-500">Error loading reviews: {error}</p>}
+
         {!loading && !error && reviews.length === 0 && (
           <p className="text-gray-600">No reviews found.</p>
         )}
+
         {!loading && !error && reviews.length > 0 && (
           <>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 bg-white text-gray-900">
-                <thead className="bg-blue-600">
+                <thead className="bg-blue-600 text-white">
                   <tr>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Property</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Tenant</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Rating</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Title</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Comment</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Created At</th>
-                    <th className="px-4 py-2 text-center text-sm font-medium text-white">Actions</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Property</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Tenant</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Rating</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Title</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Comment</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium">Created At</th>
+                    <th className="px-4 py-2 text-center text-sm font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -127,16 +158,13 @@ const AdminReviewsPage: NextPage = () => {
                 </tbody>
               </table>
             </div>
+
             {reviewsTotalPages > 1 && (
               <div className="flex justify-center space-x-2 mt-6">
                 <button
                   onClick={handlePrev}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded ${
-                    currentPage === 1
-                      ? 'opacity-50 cursor-not-allowed bg-gray-300 text-gray-600'
-                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                  }`}
+                  className="px-3 py-1 rounded bg-gray-200 text-gray-800 disabled:opacity-50 hover:bg-gray-300"
                 >
                   Prev
                 </button>
@@ -146,11 +174,7 @@ const AdminReviewsPage: NextPage = () => {
                 <button
                   onClick={handleNext}
                   disabled={currentPage === reviewsTotalPages}
-                  className={`px-3 py-1 rounded ${
-                    currentPage === reviewsTotalPages
-                      ? 'opacity-50 cursor-not-allowed bg-gray-300 text-gray-600'
-                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                  }`}
+                  className="px-3 py-1 rounded bg-gray-200 text-gray-800 disabled:opacity-50 hover:bg-gray-300"
                 >
                   Next
                 </button>
@@ -160,7 +184,7 @@ const AdminReviewsPage: NextPage = () => {
         )}
       </div>
     </AdminLayout>
-  )
-}
+  );
+};
 
-export default AdminReviewsPage
+export default AdminReviewsPage;

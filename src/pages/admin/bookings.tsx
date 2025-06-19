@@ -1,135 +1,155 @@
 import { NextPage } from 'next';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {fetchBookings,updateBookingStatus,Booking,} from '@/store/slices/adminSlice';
+import {
+  fetchBookings,
+  updateBookingStatus,
+  Booking,
+} from '@/store/slices/adminSlice';
 import toast from 'react-hot-toast';
 import Head from 'next/head';
 import AdminLayout from '@/components/admin/AdminLayout';
+import socket, { connectSocket } from '@/utils/socket';
 
 const PAGE_SIZE = 5;
 
 const AdminBookingsPage: NextPage = () => {
-
   const dispatch = useAppDispatch();
-  const {bookings,bookingsPage,bookingsTotalPages,loading,error,} = useAppSelector((state) => state.admin)!;
-  const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
-  const [page, setPage] = useState<number>(bookingsPage);
+  const {
+    bookings,
+    bookingsPage,
+    bookingsTotalPages,
+    loading,
+    error,
+  } = useAppSelector((state) => state.admin)!;
 
-  useEffect(() => {
+  const [page, setPage] = useState(bookingsPage);
+  const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
+
+  const reload = useCallback(() => {
     dispatch(fetchBookings({ page, limit: PAGE_SIZE }));
   }, [dispatch, page]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   useEffect(() => {
     setPage(bookingsPage);
   }, [bookingsPage]);
 
-  const handleStatusUpdate = async (
-    bookingId: string,
-    newStatus: 'CONFIRMED' | 'REJECTED'
-  ) => {
+  useEffect(() => {
+    const token = localStorage.getItem('token') || '';
+    connectSocket(token);
+    socket.on('newBooking', reload);
+    socket.on('bookingStatusUpdate', reload);
+    socket.on('paymentStatusUpdated', reload);
 
-    setUpdatingIds((m) => ({ ...m, [bookingId]: true }));
+    return () => {
+      socket.off('newBooking', reload);
+      socket.off('bookingStatusUpdate', reload);
+      socket.off('paymentStatusUpdated', reload);
+    };
+  }, [reload]);
+
+  const handleStatusUpdate = async (
+    id: string,
+    status: 'CONFIRMED' | 'REJECTED'
+  ) => {
+    setUpdatingIds((m) => ({ ...m, [id]: true }));
     try {
-      await dispatch(updateBookingStatus({ bookingId, status: newStatus })).unwrap();
-      toast.success(`Booking ${newStatus.toLowerCase()}`);
-      dispatch(fetchBookings({ page, limit: PAGE_SIZE }));
+      await dispatch(updateBookingStatus({ bookingId: id, status })).unwrap();
+      toast.success(`Booking ${status.toLowerCase()}`);
+      reload();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error('Could not update booking status: ' + msg);
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error('Could not update status: ' + message);
     } finally {
       setUpdatingIds((m) => {
         const next = { ...m };
-        delete next[bookingId];
+        delete next[id];
         return next;
       });
     }
   };
 
-  const handlePrev = () => {
+  const prev = () => {
     if (page > 1) setPage(page - 1);
   };
 
-  const handleNext = () => {
+  const next = () => {
     if (page < bookingsTotalPages) setPage(page + 1);
   };
 
   return (
     <AdminLayout>
       <Head>
-        <title> Rentify | Booking</title>
-        <meta
-          name="description"
-          content="Admin page to manage bookings for Rentify properties."
-        />
-        <link rel="canonical" href="/admin/bookings" />
+        <title>Rentify | Manage Bookings</title>
+        <meta name="description" content="Admin page to manage bookings." />
       </Head>
-      <div className="flex flex-col space-y-6">
-        <h1 className="text-2xl font-bold text-blue-600">
-          Manage Bookings
-        </h1>
+
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-blue-600">Manage Bookings</h1>
+
         {loading && (
           <div className="flex justify-center py-10">
             <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full" />
           </div>
         )}
 
-        {error && (
-          <p className="text-red-500">Error loading bookings: {error}</p>
-        )}
+        {error && <p className="text-red-500 text-center">{error}</p>}
 
-        {!loading && !error && bookings.length === 0 && (
-          <p className="text-gray-600">No bookings found.</p>
-        )}
-        {!loading && !error && bookings.length > 0 && (
+        {!loading && bookings.length === 0 && <p>No bookings found.</p>}
+
+        {bookings.length > 0 && (
           <>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 bg-white text-gray-900">
-                <thead className="bg-blue-600">
+              <table className="w-full bg-white divide-y divide-gray-200">
+                <thead className="bg-blue-600 text-white">
                   <tr>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Property</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Tenant</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Dates</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Booking Status</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Payment Status</th>
-                    <th className="px-4 py-2 text-center text-sm font-medium text-white">Actions</th>
+                    <th className="px-4 py-2 text-left">Property</th>
+                    <th className="px-4 py-2 text-left">Tenant</th>
+                    <th className="px-4 py-2 text-left">Dates</th>
+                    <th className="px-4 py-2 text-left">Booking Status</th>
+                    <th className="px-4 py-2 text-left">Payment</th>
+                    <th className="px-4 py-2 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {bookings.map((b: Booking) => (
                     <tr key={b.id}>
-                      <td className="px-4 py-3 whitespace-nowrap">{b.property?.title}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        {b.tenant?.name} <br />
+                      <td className="px-4 py-3">{b.property.title}</td>
+                      <td className="px-4 py-3">
+                        {b.tenant.name}
+                        <br />
                         <a
-                          href={`mailto:${b.tenant?.email}`}
-                          className="text-blue-500 hover:underline text-sm"
+                          href={`mailto:${b.tenant.email}`}
+                          className="text-blue-500 text-sm"
                         >
-                          {b.tenant?.email}
+                          {b.tenant.email}
                         </a>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        {new Date(b.startDate).toLocaleDateString()} &ndash;{' '}
+                      <td className="px-4 py-3">
+                        {new Date(b.startDate).toLocaleDateString()} –{' '}
                         {new Date(b.endDate).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-4 py-3">
                         <span
-                          className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
                             b.status === 'PENDING'
                               ? 'bg-yellow-200 text-yellow-800'
                               : b.status === 'CONFIRMED'
                               ? 'bg-green-200 text-green-800'
-                              : b.status === 'REJECTED'
-                              ? 'bg-red-200 text-red-800'
-                              : 'bg-gray-200 text-gray-800'
+                              : 'bg-red-200 text-red-800'
                           }`}
                         >
                           {b.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-4 py-3">
                         {b.payment ? (
                           <span
-                            className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                            className={`px-2 py-1 rounded text-xs font-semibold ${
                               b.payment.status === 'PENDING'
                                 ? 'bg-yellow-200 text-yellow-800'
                                 : b.payment.status === 'SUCCESS'
@@ -140,37 +160,37 @@ const AdminBookingsPage: NextPage = () => {
                             {b.payment.status}
                           </span>
                         ) : (
-                          <span className="text-gray-500">—</span>
+                          '—'
                         )}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <td className="px-4 py-3 text-center">
                         {b.status === 'PENDING' ? (
-                          <div className="flex items-center justify-center space-x-2">
+                          <div className="flex justify-center space-x-2">
                             <button
                               onClick={() => handleStatusUpdate(b.id, 'CONFIRMED')}
                               disabled={updatingIds[b.id]}
-                              className={`px-3 py-1 rounded text-sm font-medium transition ${
+                              className={`px-3 py-1 rounded text-white font-medium ${
                                 updatingIds[b.id]
-                                  ? 'opacity-50 cursor-not-allowed bg-blue-400 text-white'
-                                  : 'bg-green-500 hover:bg-green-600 text-white'
+                                  ? 'bg-gray-400'
+                                  : 'bg-green-500 hover:bg-green-600'
                               }`}
                             >
-                              {updatingIds[b.id] ? '…' : 'Confirm'}
+                              Confirm
                             </button>
                             <button
                               onClick={() => handleStatusUpdate(b.id, 'REJECTED')}
                               disabled={updatingIds[b.id]}
-                              className={`px-3 py-1 rounded text-sm font-medium transition ${
+                              className={`px-3 py-1 rounded text-white font-medium ${
                                 updatingIds[b.id]
-                                  ? 'opacity-50 cursor-not-allowed bg-blue-400 text-white'
-                                  : 'bg-red-500 hover:bg-red-600 text-white'
+                                  ? 'bg-gray-400'
+                                  : 'bg-red-500 hover:bg-red-600'
                               }`}
                             >
-                              {updatingIds[b.id] ? '…' : 'Reject'}
+                              Reject
                             </button>
                           </div>
                         ) : (
-                          <span className="text-gray-500">—</span>
+                          '—'
                         )}
                       </td>
                     </tr>
@@ -178,31 +198,23 @@ const AdminBookingsPage: NextPage = () => {
                 </tbody>
               </table>
             </div>
-            <div className="flex items-center justify-between px-4 py-3 bg-blue-600 rounded-b-lg">
+
+            {/* pagination */}
+            <div className="flex justify-between bg-blue-600 text-white px-4 py-2 rounded-b-lg">
               <button
-                onClick={handlePrev}
+                onClick={prev}
                 disabled={page <= 1}
-                className={`px-3 py-1 rounded ${
-                  page <= 1
-                    ? 'opacity-50 cursor-not-allowed bg-blue-400 text-white'
-                    : 'bg-blue-800 hover:bg-blue-700 text-white'
-                }`}
+                className="px-3 py-1 rounded bg-blue-800 disabled:opacity-50"
               >
                 Previous
               </button>
-
-              <span className="text-white">
+              <span>
                 Page {page} of {bookingsTotalPages}
               </span>
-
               <button
-                onClick={handleNext}
+                onClick={next}
                 disabled={page >= bookingsTotalPages}
-                className={`px-3 py-1 rounded ${
-                  page >= bookingsTotalPages
-                    ? 'opacity-50 cursor-not-allowed bg-blue-400 text-white'
-                    : 'bg-blue-800 hover:bg-blue-700 text-white'
-                }`}
+                className="px-3 py-1 rounded bg-blue-800 disabled:opacity-50"
               >
                 Next
               </button>
