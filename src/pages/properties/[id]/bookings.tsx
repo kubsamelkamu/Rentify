@@ -62,12 +62,14 @@ const PropertyBookingsPage: NextPage = () => {
 
     socket.emit('joinRoom', propertyId);
 
-    const handleNewBooking = (newBooking: Booking) => {
-      setBookings((prev) => [newBooking, ...prev]);
+    const handleNewBooking = (newBooking: any) => {
+      // Optionally, validate or map newBooking to Booking type here
+      setBookings((prev) => [newBooking as Booking, ...prev]);
       toast.success('New booking request received!');
     };
 
-    const handleStatusUpdate = (updated: Booking) => {
+    const handleStatusUpdate = (payload: unknown) => {
+      const updated = payload as Booking;
       setBookings((prev) =>
         prev.map((b) => (b.id === updated.id ? updated : b))
       );
