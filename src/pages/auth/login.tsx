@@ -8,10 +8,9 @@ import { loginUser, clearError } from '@/store/slices/authSlice';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
-
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { loading, error: apiError } = useAppSelector((state) => state.auth);
+  const { loading, error: apiError, user } = useAppSelector((state) => state.auth);
   const { redirect } = router.query as { redirect?: string };
 
   const [email, setEmail] = useState('');
@@ -19,9 +18,21 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
 
+  // Clear API error on mount
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
+
+  // Redirect based on role once user logs in
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'ADMIN') {
+      router.push('/admin');
+    } else {
+      const destination = redirect ? decodeURIComponent(redirect) : '/properties';
+      router.push(destination);
+    }
+  }, [user, redirect, router]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,12 +43,8 @@ export default function LoginPage() {
     }
 
     try {
+      // Attempt login; user state will update on success
       await dispatch(loginUser({ email, password })).unwrap();
-      const destination = redirect
-        ? decodeURIComponent(redirect)
-        : '/properties';
-
-      router.push(destination);
     } catch (err: unknown) {
       if (err instanceof Error) setFormError(err.message);
       else setFormError('Login failed. Please try again.');
@@ -82,37 +89,34 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder=" you@example.com"
-                 className="mt-2 block w-full px-3 py-2 border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 text-black"
+                  placeholder="you@example.com"
+                  className="mt-2 block w-full px-3 py-2 border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 text-black"
                 />
               </div>
-              <div> {/* Outer container for the whole field */}
-  <label className="flex items-center text-sm font-medium text-gray-700">
-    <Lock className="mr-2 text-indigo-500" size={18} /> Password
-  </label>
-  
-  {/* This new div is the key to the solution */}
-  <div className="relative mt-2">
-    <input
-      type={showPassword ? 'text' : 'password'}
-      value={password}
-      onChange={(e) => setPassword(e.target.value)}
-      required
-      placeholder=" ********"
-      // Note: mt-2 has been removed from here
-      className="block w-full pl-3 pr-10 py-2 border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 text-black"
-    />
-    <button
-      type="button"
-      onClick={() => setShowPassword(!showPassword)}
-      // These classes now work correctly because the parent is the right height
-      className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-      aria-label="Toggle password visibility"
-    >
-      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-    </button>
-  </div>
-</div>
+              <div>
+                <label className="flex items-center text-sm font-medium text-gray-700">
+                  <Lock className="mr-2 text-indigo-500" size={18} /> Password
+                </label>
+
+                <div className="relative mt-2">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="********"
+                    className="block w-full pl-3 pr-10 py-2 border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 text-black"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                    aria-label="Toggle password visibility"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
 
               <button
                 type="submit"
