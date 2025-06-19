@@ -26,9 +26,11 @@ const baseNavItems: NavItem[] = [
       { label: 'Rent Property', href: '/properties' },
     ],
   },
+  { label: 'contact', href: '/contact' },
 ];
 
 export default function Header() {
+  
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState<Record<string, boolean>>({});
 
