@@ -5,7 +5,6 @@ import {
   fetchUsers,
   changeUserRole,
   deleteUser,
-  addUser,
   User as AdminUser,
 } from '@/store/slices/adminSlice';
 import toast from 'react-hot-toast';
@@ -24,13 +23,11 @@ const AdminUsersPage: NextPage = () => {
   const [page, setPage] = useState<number>(usersPage);
   const limit = 5;
 
-  // Real-time: connect and listen for new users
   useEffect(() => {
     const token = localStorage.getItem('token') || '';
     connectSocket(token);
 
     const handleNewUser = (newUser: AdminUser) => {
-      dispatch(addUser(newUser));
       toast(
         `New user joined: ${newUser.name}`,
         { icon: '👤' }

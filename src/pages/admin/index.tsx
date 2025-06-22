@@ -1,4 +1,3 @@
-// src/pages/admin/index.tsx
 import { NextPage } from 'next';
 import { useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -7,54 +6,44 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import socket, { connectSocket } from '@/utils/socket';
 import Head from 'next/head';
 import { motion } from 'framer-motion';
-import {
-  Users as UsersIcon,
-  Home as HomeIcon,
-  CalendarCheck as BookingsIcon,
-  Star as ReviewsIcon,
-  Currency as RevenueIcon,
+import {Users as UsersIcon,Home as HomeIcon,CalendarCheck as BookingsIcon,Star as ReviewsIcon,Currency as RevenueIcon,
 } from 'lucide-react';
 
 const AdminDashboardPage: NextPage = () => {
+
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((s) => s.auth)!;
   const { metrics, loading, error } = useAppSelector((s) => s.admin)!;
 
   useEffect(() => {
     if (user?.role !== 'ADMIN') return;
-
-    // initial load
     dispatch(fetchMetrics());
-
-    // connect socket once authenticated
     const token = localStorage.getItem('token') || '';
     connectSocket(token);
 
-    // unified refresh callback
     const refresh = () => dispatch(fetchMetrics());
 
-    // ── User events ──
     socket.on('admin:newUser', refresh);
     socket.on('admin:updateUser', refresh);
     socket.on('admin:deleteUser', refresh);
 
-    // ── Property events ──
     socket.on('admin:newProperty', refresh);
     socket.on('admin:updateProperty', refresh);
     socket.on('admin:deleteProperty', refresh);
 
-    // ── Booking events ──
     socket.on('newBooking', refresh);
     socket.on('bookingStatusUpdate', refresh);
     socket.on('paymentStatusUpdated', refresh);
 
-    // ── Review events ──
     socket.on('admin:newReview', refresh);
     socket.on('admin:updateReview', refresh);
     socket.on('admin:deleteReview', refresh);
 
+    socket.on('listing:approved', refresh);
+    socket.on('listing:rejected', refresh);
+    socket.on('listing:pending', refresh);
+
     return () => {
-      // clean up all listeners
       socket.off('admin:newUser', refresh);
       socket.off('admin:updateUser', refresh);
       socket.off('admin:deleteUser', refresh);
@@ -70,6 +59,10 @@ const AdminDashboardPage: NextPage = () => {
       socket.off('admin:newReview', refresh);
       socket.off('admin:updateReview', refresh);
       socket.off('admin:deleteReview', refresh);
+
+      socket.off('listing:approved', refresh);
+      socket.on('listing:rejected', refresh);
+      socket.on('listing:pending', refresh);
     };
   }, [dispatch, user]);
 

@@ -1,8 +1,7 @@
-import PropertiesListPage from "./properties";
-
+import AboutPage from "./about";
 
 export default function HomePage() {
   return(
-    <PropertiesListPage/>
+    <AboutPage/>
   );
 }

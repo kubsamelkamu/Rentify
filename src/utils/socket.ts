@@ -16,6 +16,10 @@ export interface ServerToClientEvents {
   'admin:updateReview': (review: Review) => void;
   'admin:deleteReview': (payload: { propertyId: string; tenantId: string }) => void;
 
+  'listing:pending': (payload: Property) => void;
+  'listing:approved': (payload: Property) => void;
+  'listing:rejected':(payload:Property) =>void;
+
   newBooking: (booking: Booking) => void;
   bookingStatusUpdate: (booking: Booking) => void;
   paymentStatusUpdated: (

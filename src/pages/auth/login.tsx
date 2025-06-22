@@ -1,26 +1,32 @@
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loginUser, clearError } from '@/store/slices/authSlice';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader } from 'lucide-react';
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { loading, error: apiError, user } = useAppSelector((state) => state.auth);
+  const { error: apiError, user } = useAppSelector((state) => state.auth);
   const { redirect } = router.query as { redirect?: string };
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const isMountedRef = useRef(true);
 
   // Clear API error on mount
   useEffect(() => {
     dispatch(clearError());
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [dispatch]);
 
   // Redirect based on role once user logs in
@@ -34,20 +40,47 @@ export default function LoginPage() {
     }
   }, [user, redirect, router]);
 
-  const handleLogin = async (e: FormEvent) => {
+  const getLoginErrorMessage = (error: string) => {
+    if (error.includes('401') || error.includes('Unauthorized')) {
+      return 'Invalid email or password. Please try again.';
+    } else if (error.includes('400')) {
+      return 'Account not verified. Please check your email.';
+    } else if (error.includes('Network Error')) {
+      return 'Network error. Please check your internet connection.';
+    } else if (error.includes('500')) {
+      return 'Server error. Please try again later.';
+    } else {
+      return 'Login failed. Please try again.';
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
+    dispatch(clearError());
+    
     if (!email || !password) {
       setFormError('Please enter both email and password.');
       return;
     }
 
+    setIsProcessing(true);
+    
     try {
-      // Attempt login; user state will update on success
+      // Attempt login
       await dispatch(loginUser({ email, password })).unwrap();
     } catch (err: unknown) {
-      if (err instanceof Error) setFormError(err.message);
-      else setFormError('Login failed. Please try again.');
+      if (isMountedRef.current) {
+        if (err instanceof Error) {
+          setFormError(getLoginErrorMessage(err.message));
+        } else {
+          setFormError('login Failed. Please try again.');
+        }
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -76,7 +109,9 @@ export default function LoginPage() {
             <h2 className="text-2xl font-semibold text-gray-700 mb-4 text-center">Welcome back!</h2>
 
             {(formError || apiError) && (
-              <p className="text-red-500 text-sm mb-4 text-center">{formError || apiError}</p>
+              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm text-center">
+                {formError || (apiError && getLoginErrorMessage(apiError))}
+              </div>
             )}
 
             <form onSubmit={handleLogin} className="space-y-6">
@@ -91,6 +126,7 @@ export default function LoginPage() {
                   required
                   placeholder="you@example.com"
                   className="mt-2 block w-full px-3 py-2 border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 text-black"
+                  disabled={isProcessing}
                 />
               </div>
               <div>
@@ -106,12 +142,14 @@ export default function LoginPage() {
                     required
                     placeholder="********"
                     className="block w-full pl-3 pr-10 py-2 border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 text-black"
+                    disabled={isProcessing}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-3 flex items-center text-gray-500"
                     aria-label="Toggle password visibility"
+                    disabled={isProcessing}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -120,22 +158,34 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-600 disabled:opacity-50 transition-all"
+                disabled={isProcessing}
+                className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center"
               >
-                {loading ? 'Logging in…' : 'Login'}
+                {isProcessing ? (
+                  <>
+                    <Loader className="animate-spin mr-2" size={20} />
+                  </>
+                ) : (
+                  'Login'
+                )}
               </button>
             </form>
 
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600">
-                <Link href="/auth/reset-password" className="text-purple-600 hover:underline font-medium">
+                <Link 
+                  href="/auth/reset-password" 
+                  className="text-purple-600 hover:underline font-medium"
+                >
                   Forgot your password?
                 </Link>
               </p>
               <p className="text-sm text-gray-600">
                 Don&apos;t have an account?{' '}
-                <Link href="/auth/register" className="text-purple-600 hover:underline font-medium">
+                <Link 
+                  href="/auth/register" 
+                  className="text-purple-600 hover:underline font-medium"
+                >
                   Sign up
                 </Link>
               </p>

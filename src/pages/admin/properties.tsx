@@ -1,162 +1,420 @@
-// src/pages/admin/properties.tsx
 import { NextPage } from 'next';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  fetchProperties,
-  deletePropertyByAdmin,
+import {fetchProperties,deletePropertyByAdmin,approveProperty,rejectProperty,
 } from '@/store/slices/adminSlice';
-import toast from 'react-hot-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
+import toast from 'react-hot-toast';
 import Head from 'next/head';
 import socket, { connectSocket } from '@/utils/socket';
+import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image'; 
 
-const PAGE_SIZE = 5;
+interface PropertySummary {
+  id: string;
+  title: string;
+  city: string;
+  rentPerMonth: string | number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string | null;
+  createdAt: string;      
+}
+
+interface PropertyDetail {
+  id: string;
+  title: string;
+  description: string;
+  city: string;
+  rentPerMonth: string | number;
+  numBedrooms: number;
+  numBathrooms: number;
+  propertyType: string;
+  amenities: string[];
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string | null;
+  createdAt: string;
+  landlord: { id: string; name: string; email: string };
+  images: { id: string; url: string }[];
+}
+
+const tabVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0 },
+};
 
 const AdminPropertiesPage: NextPage = () => {
   const dispatch = useAppDispatch();
-  const {
-    properties,
-    loading,
-    error,
-    propertiesPage,
-    propertiesTotalPages,
-  } = useAppSelector((s) => s.admin)!;
+  const { properties, propertiesPage, propertiesLimit, propertiesTotalPages, loading } =
+    useAppSelector((s) => s.admin);
 
-  const [page, setPage] = useState<number>(propertiesPage || 1);
-  const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({});
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [propertyToReject, setPropertyToReject] = useState<string | null>(null);
 
-  const reload = useCallback(() => {
-    dispatch(fetchProperties({ page, limit: PAGE_SIZE }));
-  }, [dispatch, page]);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [propertyDetail, setPropertyDetail] = useState<PropertyDetail | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'images'>('overview');
 
   useEffect(() => {
-    reload();
-  }, [reload]);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token') || '';
-    connectSocket(token);
-
-    socket.on('admin:newProperty', reload);
-    socket.on('admin:updateProperty', reload);
-    socket.on('admin:deleteProperty', reload);
-
-    return () => {
-      socket.off('admin:newProperty', reload);
-      socket.off('admin:updateProperty', reload);
-      socket.off('admin:deleteProperty', reload);
+    const token = localStorage.getItem('token');
+    if (token) connectSocket(token);
+    
+    // Moved reload function inside useEffect to fix dependency warning
+    const reload = () => {
+      dispatch(fetchProperties({ page: propertiesPage, limit: propertiesLimit }));
     };
-  }, [reload]);
 
-  useEffect(() => {
-    setPage(propertiesPage);
-  }, [propertiesPage]);
+    reload();
 
-  const handleDelete = async (id: string) => {
-    setDeletingIds((m) => ({ ...m, [id]: true }));
-    try {
-      await dispatch(deletePropertyByAdmin(id)).unwrap();
-      toast.success('Property deleted');
-      if (properties.length === 1 && page > 1) {
-        setPage((p) => p - 1);
-      } else {
-        reload();
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      toast.error('Delete failed: ' + message);
-    } finally {
-      setDeletingIds((m) => {
-        const c = { ...m };
-        delete c[id];
-        return c;
-      });
-    }
+    socket.on('listing:approved', reload);
+    socket.on('listing:rejected', reload);
+    socket.on('listing:pending', reload);
+    
+    return () => {
+      socket.off('listing:approved', reload);
+      socket.off('listing:rejected', reload);
+      socket.off('listing:pending', reload);
+    };
+  }, [dispatch, propertiesPage, propertiesLimit]);
+
+  const handleDelete = (id: string) => {
+    if (!confirm('Delete this property?')) return;
+    dispatch(deletePropertyByAdmin(id))
+      .unwrap()
+      .then(() => toast.success('Deleted'))
+      .catch((e) => toast.error(e));
   };
 
-  const prev = () => page > 1 && setPage((p) => p - 1);
-  const next = () => page < propertiesTotalPages && setPage((p) => p + 1);
+  const handleApprove = (id: string) => {
+    dispatch(approveProperty(id))
+      .unwrap()
+      .then(() => toast.success('Approved'))
+      .catch((e) => toast.error(e));
+  };
+
+  const openRejectModal = (id: string) => {
+    setPropertyToReject(id);
+    setRejectReason('');
+    setShowRejectModal(true);
+  };
+
+  const closeRejectModal = () => {
+    setShowRejectModal(false);
+    setPropertyToReject(null);
+    setRejectReason('');
+  };
+
+  const submitReject = () => {
+    if (!rejectReason.trim() || !propertyToReject) {
+      return toast.error('Enter a reason');
+    }
+    dispatch(rejectProperty({ propertyId: propertyToReject, reason: rejectReason.trim() }))
+      .unwrap()
+      .then(() => {
+        toast.success('Rejected');
+        closeRejectModal();
+      })
+      .catch((e) => toast.error(e));
+  };
+
+  const openDetailModal = async (id: string) => {
+    setDetailLoading(true);
+    try {
+      const { data } = await axios.get<PropertyDetail>(`/api/properties/${id}`);
+      setPropertyDetail(data);
+      setActiveTab('overview');
+      setShowDetailModal(true);
+    } catch{
+      toast.error('Failed to fetch details');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+  const closeDetailModal = () => {
+    setShowDetailModal(false);
+    setPropertyDetail(null);
+  };
+
+  const prev = () => {
+    if (propertiesPage > 1) {
+      dispatch(fetchProperties({ page: propertiesPage - 1, limit: propertiesLimit }));
+    }
+  };
+  const next = () => {
+    if (propertiesPage < propertiesTotalPages) {
+      dispatch(fetchProperties({ page: propertiesPage + 1, limit: propertiesLimit }));
+    }
+  };
 
   return (
     <AdminLayout>
       <Head>
-        <title>Rentify | Manage Properties</title>
-        <meta name="description" content="Admin property management" />
+        <title>Admin | Manage Properties</title>
       </Head>
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-blue-600">Manage Properties</h1>
-        {loading && (
-          <div className="flex justify-center py-10">
-            <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full" />
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
+        <h1 className="text-2xl font-bold">Manage Properties</h1>
+
+        {loading && <p className="text-gray-500">Loading…</p>}
+
+        <table className="w-full text-sm border">
+          <thead className="bg-gray-50">
+            <tr>
+              {['Title', 'City', 'Rent', 'Status', 'Created', 'Actions'].map((h) => (
+                <th key={h} className="px-4 py-2 text-left">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {properties.map((p: PropertySummary) => (
+              <tr key={p.id} className="border-t">
+                <td className="px-4 py-3">{p.title}</td>
+                <td className="px-4 py-3">{p.city}</td>
+                <td className="px-4 py-3">
+                  $
+                  {Number(p.rentPerMonth).toFixed(2).replace(/\.00$/, '')}
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-semibold ${
+                      p.status === 'APPROVED'
+                        ? 'bg-green-100 text-green-800'
+                        : p.status === 'REJECTED'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {p.status}
+                  </span>
+                  {p.status === 'REJECTED' && p.rejectionReason && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Reason: {p.rejectionReason}
+                    </p>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {new Date(p.createdAt).toLocaleDateString()}
+                </td>
+                <td className="px-4 py-3 space-y-1">
+                  {p.status === 'PENDING' && (
+                    <div className="space-x-1 mb-1">
+                      <button
+                        onClick={() => handleApprove(p.id)}
+                        className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => openRejectModal(p.id)}
+                        className="px-2 py-1 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => openDetailModal(p.id)}
+                    className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    View Detail
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="flex items-center justify-between">
+          <button
+            onClick={prev}
+            disabled={propertiesPage === 1}
+            className={`px-4 py-2 rounded ${
+              propertiesPage === 1
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-600">
+            Page {propertiesPage} of {propertiesTotalPages}
+          </span>
+          <button
+            onClick={next}
+            disabled={propertiesPage === propertiesTotalPages}
+            className={`px-4 py-2 rounded ${
+              propertiesPage === propertiesTotalPages
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            Next
+          </button>
+        </div>
+
+        {showRejectModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white rounded-lg p-6 w-96">
+              <h2 className="text-lg font-semibold mb-4">Reject Property</h2>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={4}
+                placeholder="Enter rejection reason"
+                className="w-full p-2 border rounded resize-none"
+              />
+              <div className="mt-4 flex justify-end space-x-3">
+                <button
+                  onClick={closeRejectModal}
+                  className="px-4 py-2 rounded border hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitReject}
+                  className="px-4 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-700"
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
           </div>
         )}
-        {error && <p className="text-red-500">{error}</p>}
-        {!loading && properties.length === 0 && <p>No properties found.</p>}
 
-        {properties.length > 0 && (
-          <>
-            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-              <table className="min-w-full divide-y divide-gray-200 bg-white text-gray-900">
-                <thead className="bg-blue-600 text-white">
-                  <tr>
-                    <th className="px-4 py-2 text-left">Title</th>
-                    <th className="px-4 py-2 text-left">City</th>
-                    <th className="px-4 py-2 text-left">Rent/mo</th>
-                    <th className="px-4 py-2 text-left">Landlord</th>
-                    <th className="px-4 py-2 text-left">Created</th>
-                    <th className="px-4 py-2 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {properties.map((p) => (
-                    <tr key={p.id}>
-                      <td className="px-4 py-3">{p.title}</td>
-                      <td className="px-4 py-3">{p.city}</td>
-                      <td className="px-4 py-3">${p.rentPerMonth}</td>
-                      <td className="px-4 py-3">{p.landlordId}</td>
-                      <td className="px-4 py-3">
-                        {new Date(p.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleDelete(p.id)}
-                          disabled={deletingIds[p.id]}
-                          className={`px-3 py-1 rounded text-sm font-medium transition ${
-                            deletingIds[p.id]
-                              ? 'bg-red-400 cursor-not-allowed'
-                              : 'bg-red-600 hover:bg-red-700 text-white'
-                          }`}
-                        >
-                          {deletingIds[p.id] ? '…' : 'Delete'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        {showDetailModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+            <div className="bg-white rounded-lg w-full max-w-3xl overflow-hidden">
+              <div className="flex border-b">
+                {(['overview', 'images'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-1 text-center py-3 font-medium ${
+                      activeTab === tab
+                        ? 'border-b-2 border-blue-600 text-blue-600'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {tab === 'overview' ? 'Overview' : 'Images'}
+                  </button>
+                ))}
+              </div>
 
-            <div className="flex justify-between bg-blue-600 text-white px-4 py-2 rounded-b-lg">
-              <button
-                onClick={prev}
-                disabled={page <= 1}
-                className="px-3 py-1 rounded bg-blue-800 disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span>
-                Page {page} of {propertiesTotalPages}
-              </span>
-              <button
-                onClick={next}
-                disabled={page >= propertiesTotalPages}
-                className="px-3 py-1 rounded bg-blue-800 disabled:opacity-50"
-              >
-                Next
-              </button>
+              <div className="p-6">
+                {detailLoading || !propertyDetail ? (
+                  <p>Loading details…</p>
+                ) : (
+                  <AnimatePresence mode="wait" initial={false}>
+                    {activeTab === 'overview' && (
+                      <motion.div
+                        key="ov"
+                        variants={tabVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        transition={{ duration: 0.2 }}
+                        className="space-y-4"
+                      >
+                        <h2 className="text-2xl font-bold">{propertyDetail.title}</h2>
+                        <p className="text-gray-700">{propertyDetail.description}</p>
+                        <ul className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                          <li>
+                            <strong>City:</strong> {propertyDetail.city}
+                          </li>
+                          <li>
+                            <strong>Rent/month:</strong> $
+                            {Number(propertyDetail.rentPerMonth)
+                              .toFixed(2)
+                              .replace(/\.00Br/, '')}
+                          </li>
+                          <li>
+                            <strong>Bedrooms:</strong> {propertyDetail.numBedrooms}
+                          </li>
+                          <li>
+                            <strong>Bathrooms:</strong> {propertyDetail.numBathrooms}
+                          </li>
+                          <li>
+                            <strong>Type:</strong> {propertyDetail.propertyType}
+                          </li>
+                          <li>
+                            <strong>Amenities:</strong>{' '}
+                            {propertyDetail.amenities.join(', ')}
+                          </li>
+                          {propertyDetail.status === 'REJECTED' &&
+                            propertyDetail.rejectionReason && (
+                              <li className="col-span-2 text-red-600">
+                                <strong>Rejection Reason:</strong>{' '}
+                                {propertyDetail.rejectionReason}
+                              </li>
+                            )}
+                          <li className="col-span-2">
+                            <strong>Listed On:</strong>{' '}
+                            {new Date(propertyDetail.createdAt).toLocaleDateString()}
+                          </li>
+                          <li className="col-span-2 bg-gray-50 p-4 rounded">
+                            <h3 className="font-semibold">Landlord</h3>
+                            <p>{propertyDetail.landlord.name}</p>
+                            <p>{propertyDetail.landlord.email}</p>
+                          </li>
+                        </ul>
+                      </motion.div>
+                    )}
+
+                    {activeTab === 'images' && (
+                      <motion.div
+                        key="img"
+                        variants={tabVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        transition={{ duration: 0.2 }}
+                      >
+                        {propertyDetail.images.length > 0 ? (
+                          <div className="grid grid-cols-3 gap-4">
+                            {propertyDetail.images.map((img) => (
+                              <div
+                                key={img.id}
+                                className="aspect-w-4 aspect-h-3 bg-gray-100 rounded overflow-hidden relative"
+                              >
+                                {/* Replaced img with Next.js Image component */}
+                                <Image
+                                  src={img.url}
+                                  alt={propertyDetail.title}
+                                  className="object-cover"
+                                  fill
+                                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500">No images available.</p>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )}
+              </div>
+
+              <div className="border-t p-4 text-right">
+                <button
+                  onClick={closeDetailModal}
+                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                >
+                  Close
+                </button>
+              </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </AdminLayout>

@@ -1,6 +1,6 @@
 import { NextPage } from 'next';
 import Head from 'next/head';
-import {useState,FormEvent,ChangeEvent,useEffect,useContext,} from 'react';
+import {useState,FormEvent,ChangeEvent,useEffect,useContext,useRef} from 'react';
 import { useRouter } from 'next/router';
 import {BedDouble,Bath,Home,MapPin,Tag,ImageIcon,} from 'lucide-react';
 import Image from 'next/image';
@@ -16,6 +16,7 @@ const NewPropertyPage: NextPage = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { theme } = useContext(ThemeContext)!;
+  const redirectTimer = useRef<NodeJS.Timeout | null>(null);
 
   const { user, status: authStatus } = useAppSelector((state) => state.auth);
   const { loading: creatingProperty, error: apiError } = useAppSelector(
@@ -36,6 +37,15 @@ const NewPropertyPage: NextPage = () => {
   const [previews, setPreviews] = useState<string[]>([]);
   const [formError, setFormError] = useState<string>('');
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimer.current) {
+        clearTimeout(redirectTimer.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -122,10 +132,71 @@ const NewPropertyPage: NextPage = () => {
       }
     }
 
-    router.push(`/properties/${propertyId}`);
+    // Show success message and set redirect timer
+    setIsSuccess(true);
+    redirectTimer.current = setTimeout(() => {
+      router.push('/properties');
+    }, 5000);
   };
 
   const isSubmitting = creatingProperty || uploadingImages;
+
+  // Render success message if submission was successful
+  if (isSuccess) {
+    return (
+      <UserLayout>
+        <Head>
+          <title>Rentify | Property Submitted</title>
+          <meta
+            name="description"
+            content="Your property has been submitted for approval"
+          />
+        </Head>
+        <div
+          className={`min-h-screen flex items-center justify-center ${
+            theme === 'dark'
+              ? 'bg-gradient-to-tr from-gray-900 to-gray-800'
+              : 'bg-gradient-to-tr from-blue-50 to-white'
+          }`}
+        >
+          <div
+            className={`max-w-md w-full p-8 rounded-2xl shadow-2xl ${
+              theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'
+            }`}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="text-center"
+            >
+              <div className="text-6xl mb-4">🎉</div>
+              <h2 className="text-2xl font-bold mb-2">Thanks!</h2>
+              <p className="mb-6">
+                Your property has been submitted and is pending approval. 
+                It will be live on Rentify once approved.
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/properties')}
+                className={`px-6 py-3 rounded-lg font-medium ${
+                  theme === 'dark'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                Browse Properties
+              </motion.button>
+              <p className="mt-4 text-sm opacity-70">
+                Redirecting to properties in 5 seconds...
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </UserLayout>
+    );
+  }
 
   return (
     <UserLayout>
@@ -224,11 +295,11 @@ const NewPropertyPage: NextPage = () => {
                   }`}
                 >
                   <MapPin
-                    className={`w-5 h-5 mr-2 ${
-                      theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                    }`}
-                  />{' '}
-                  City
+                  className={`w-5 h-5 mr-2 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`}
+                />{' '}
+                City
                 </label>
                 <input
                   type="text"

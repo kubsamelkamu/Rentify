@@ -2,12 +2,11 @@ import { useState, FormEvent, useEffect, ChangeEvent, ElementType } from 'react'
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Loader } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { registerUser } from '@/store/slices/authSlice';
 
-// --- Reusable InputField Component ---
 interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   id: string;
   label: string;
@@ -31,7 +30,6 @@ const InputField = ({ id, label, icon: Icon, type, ...props }: InputFieldProps) 
           id={id}
           name={id}
           type={currentType}
-          // ADJUSTMENT: Added `px-3` for horizontal padding inside the input field.
           className={`block w-full border-gray-200 rounded-lg shadow-sm px-3 focus:border-purple-500 focus:ring-purple-500 text-black ${
             isPasswordType ? 'pr-10' : ''
           }`}
@@ -53,9 +51,10 @@ const InputField = ({ id, label, icon: Icon, type, ...props }: InputFieldProps) 
 };
 
 export default function RegisterPage() {
+  
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { loading, error: apiError } = useAppSelector((state) => state.auth);
+  const {  error: apiError } = useAppSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -65,6 +64,7 @@ export default function RegisterPage() {
   });
   const [agree, setAgree] = useState(false);
   const [formError, setFormError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const { name, email, password, confirmPassword } = formData;
 
@@ -86,14 +86,23 @@ export default function RegisterPage() {
       return;
     }
 
+    setIsProcessing(true);
+    
     try {
+      const startTime = Date.now();
       const result = await dispatch(registerUser({ name, email, password }));
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 5000 - elapsed);
+      await new Promise(resolve => setTimeout(resolve, remaining));
+      
       if (registerUser.fulfilled.match(result)) {
-        router.push('/auth/login');
+        router.push('/auth/verify-email-info');
       }
     } catch (err: unknown) {
       if (err instanceof Error) setFormError(err.message);
       else setFormError('An error occurred. Please try again.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -188,10 +197,16 @@ export default function RegisterPage() {
 
               <button
                 type="submit"
-                disabled={!agree || loading}
-                className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-600 disabled:opacity-50 transition-all"
+                disabled={!agree || isProcessing}
+                className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center"
               >
-                {loading ? 'Registering…' : 'Create Account'}
+                {isProcessing ? (
+                  <>
+                    <Loader className="animate-spin mr-2" size={20} />
+                  </>
+                ) : (
+                  'Create Account'
+                )}
               </button>
 
               <p className="text-sm text-gray-600 text-center">
