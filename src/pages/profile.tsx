@@ -259,8 +259,8 @@ const ProfilePage: NextPage = () => {
               <input
                 type="text"
                 readOnly
-                value={new Date(user.updatedAt).toLocaleDateString()}
-                className={`w-full px-4 py-2 rounded-lg border cursor-not-allowed ${
+                value={new Date(user.updatedAt ?? "").toLocaleDateString()}
+                          className={`w-full px-4 py-2 rounded-lg border cursor-not-allowed ${
                   theme === "dark"
                     ? "bg-gray-700 border-gray-600 text-gray-100"
                     : "bg-gray-50 border-gray-300 text-gray-900"

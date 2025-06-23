@@ -1,15 +1,18 @@
-import {ChangeEvent,FormEvent,useEffect,useState,} from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import {fetchCurrentProfile,saveProfile,clearError,} from "@/store/slices/authSlice";
+import {
+  fetchCurrentProfile,
+  saveProfile,
+  clearError,
+} from "@/store/slices/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import toast from "react-hot-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 const ProfilePage: NextPage = () => {
-
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { user, status: fetchStatus, error: fetchError } = useAppSelector(
@@ -21,9 +24,9 @@ const ProfilePage: NextPage = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-
   const [nameError, setNameError] = useState("");
 
+  // Redirect if not logged in
   useEffect(() => {
     if (user === null) {
       router.replace(
@@ -32,11 +35,13 @@ const ProfilePage: NextPage = () => {
     }
   }, [user, router]);
 
+  // Fetch profile
   useEffect(() => {
     dispatch(clearError());
     dispatch(fetchCurrentProfile());
   }, [dispatch]);
 
+  // Populate form when user data arrives
   useEffect(() => {
     if (user) {
       setName(user.name);
@@ -48,16 +53,14 @@ const ProfilePage: NextPage = () => {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
     const selected = files[0];
-    const url = URL.createObjectURL(selected);
-    setPreviewUrl(url);
+    setPreviewUrl(URL.createObjectURL(selected));
     setFile(selected);
   };
 
   const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    if (val === "" || /^[A-Za-z\s]+$/.test(val)) {
+    if (/^[A-Za-z\s]*$/.test(val)) {
       setName(val);
       setNameError("");
     } else {
@@ -72,14 +75,11 @@ const ProfilePage: NextPage = () => {
       setNameError("Name can only contain letters and spaces.");
       return;
     }
-
     setSaving(true);
     const formData = new FormData();
     formData.append("name", name.trim());
     formData.append("email", email);
-    if (file) {
-      formData.append("profilePhoto", file);
-    }
+    if (file) formData.append("profilePhoto", file);
 
     try {
       await dispatch(saveProfile(formData)).unwrap();
@@ -129,13 +129,14 @@ const ProfilePage: NextPage = () => {
       <div className="max-w-3xl mx-auto my-12 p-6 rounded-2xl shadow bg-white text-gray-900">
         <h1 className="text-2xl font-bold text-blue-600 mb-6">Your Profile</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Profile Photo */}
           <div>
             <label className="block text-sm font-medium mb-1">Profile Photo</label>
             <div className="flex items-center space-x-6">
               {previewUrl ? (
                 <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-200">
                   <Image
-                    src={previewUrl!}
+                    src={previewUrl}
                     alt="Profile Preview"
                     width={96}
                     height={96}
@@ -165,6 +166,8 @@ const ProfilePage: NextPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Name & Email */}
           <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-6">
             <div>
               <label className="block text-sm font-medium mb-1">Name</label>
@@ -177,9 +180,7 @@ const ProfilePage: NextPage = () => {
                 onChange={handleNameChange}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {nameError && (
-                <p className="mt-1 text-sm text-red-500">{nameError}</p>
-              )}
+              {nameError && <p className="mt-1 text-sm text-red-500">{nameError}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
@@ -193,6 +194,8 @@ const ProfilePage: NextPage = () => {
               />
             </div>
           </div>
+
+          {/* Role */}
           <div>
             <label className="block text-sm font-medium mb-1">Role</label>
             <input
@@ -202,13 +205,15 @@ const ProfilePage: NextPage = () => {
               className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-100 cursor-not-allowed"
             />
           </div>
+
+          {/* Joined On & Last Updated */}
           <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-6">
             <div>
               <label className="block text-sm font-medium mb-1">Joined On</label>
               <input
                 type="text"
                 readOnly
-                value={new Date(user.createdAt).toLocaleDateString()}
+                value={user.createdAt ? new Date(user.createdAt).toLocaleDateString() : ""}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-100 cursor-not-allowed"
               />
             </div>
@@ -217,11 +222,13 @@ const ProfilePage: NextPage = () => {
               <input
                 type="text"
                 readOnly
-                value={new Date(user.updatedAt).toLocaleDateString()}
+                value={user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : ""}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-gray-100 cursor-not-allowed"
               />
             </div>
           </div>
+
+          {/* Save Button */}
           <div className="pt-4 border-t">
             <button
               type="submit"

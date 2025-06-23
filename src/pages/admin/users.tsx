@@ -1,20 +1,15 @@
 import { NextPage } from 'next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  fetchUsers,
-  changeUserRole,
-  deleteUser,
-  User as AdminUser,
-} from '@/store/slices/adminSlice';
+import {fetchUsers,changeUserRole,deleteUser,User as AdminUser,} from '@/store/slices/adminSlice';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Head from 'next/head';
 
-// socket client
 import socket, { connectSocket } from '@/utils/socket';
 
 const AdminUsersPage: NextPage = () => {
+
   const dispatch = useAppDispatch();
   const { users, loading, error, usersPage, usersTotalPages } = useAppSelector(
     (state) => state.admin
@@ -40,7 +35,6 @@ const AdminUsersPage: NextPage = () => {
     };
   }, [dispatch]);
 
-  // Fetch paginated users
   useEffect(() => {
     dispatch(fetchUsers({ page, limit }));
   }, [dispatch, page]);
