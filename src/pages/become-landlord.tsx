@@ -1,3 +1,5 @@
+// src/pages/become-landlord.tsx
+
 import { NextPage } from 'next';
 import { useEffect, useContext, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -10,48 +12,46 @@ import Head from 'next/head';
 import Link from 'next/link';
 
 const BecomeLandlordPage: NextPage = () => {
-
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { theme } = useContext(ThemeContext)!;
   const user = useAppSelector((s) => s.auth.user);
-  const authToken = useAppSelector((s) => s.auth.token);
+  const token = useAppSelector((s) => s.auth.token);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // If not logged in, redirect to login and come back here after
   useEffect(() => {
-    if (!user || !authToken) {
+    if (!user || !token) {
       router.replace(
         `/auth/login?redirect=${encodeURIComponent('/become-landlord')}`
       );
     }
-  }, [user, authToken, router]);
+  }, [user, token, router]);
 
+  // If already a landlord/admin, go to list page
   useEffect(() => {
     if (user?.role === 'LANDLORD' || user?.role === 'ADMIN') {
       router.replace('/properties/list');
     }
   }, [user, router]);
 
-  const handleBecomeLandlord = () => {
+  const handleBecomeLandlord = async () => {
     if (!user) return;
     setIsSubmitting(true);
 
-    setTimeout(async () => {
-      try {
-        await dispatch(
-          changeUserRole({ userId: user.id, role: 'LANDLORD' })
-        ).unwrap();
+    try {
+      // dispatch the role change; authSlice will pick up new user+token
+      await dispatch(
+        changeUserRole({ userId: user.id, role: 'LANDLORD' })
+      ).unwrap();
 
-        toast.success('🎉 You are now a landlord!');
-        router.replace(
-          `/auth/login?redirect=${encodeURIComponent('/properties/list')}`
-        );
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        toast.error('Could not upgrade role: ' + msg);
-        setIsSubmitting(false);
-      }
-    }, 5000);
+      toast.success('🎉 You are now a landlord!');
+      router.replace('/properties/list');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error('Could not upgrade role: ' + msg);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -60,7 +60,7 @@ const BecomeLandlordPage: NextPage = () => {
         <title>Rentify | Become Landlord</title>
         <meta
           name="description"
-          content="Upgrade your account to become a landlord and start listing your properties on Rentify."
+          content="Upgrade your account to become a landlord and start listing properties on Rentify."
         />
       </Head>
       <div
@@ -77,7 +77,7 @@ const BecomeLandlordPage: NextPage = () => {
           <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
             By enrolling as a landlord, you agree to our platform’s{' '}
             <Link href="/terms&conditions" className="underline hover:text-blue-600">
-            Terms&nbsp;&amp;&nbsp;Conditions
+              Terms&nbsp;&amp;&nbsp;Conditions
             </Link>
           </p>
           <div className="space-y-4">
@@ -87,11 +87,7 @@ const BecomeLandlordPage: NextPage = () => {
               }`}
             >
               <h2 className="font-semibold mb-2">Terms & Conditions (excerpt)</h2>
-              <ul
-                className={`list-disc pl-5 space-y-1 text-sm ${
-                  theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                }`}
-              >
+              <ul className="list-disc pl-5 space-y-1 text-sm">
                 <li>You may only list properties you own or manage legally.</li>
                 <li>All property photos must be accurate and up to date.</li>
                 <li>You must respond to tenant inquiries within 48 hours.</li>

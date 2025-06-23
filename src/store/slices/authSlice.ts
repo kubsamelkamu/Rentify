@@ -1,3 +1,5 @@
+// src/store/slices/authSlice.ts
+
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import api from '@/utils/api';
@@ -12,7 +14,7 @@ export interface User {
   role: Role;
   profilePhoto?: string | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 type AuthState = {
@@ -31,7 +33,13 @@ const initialState: AuthState = {
   error: null,
 };
 
-export const registerUser = createAsyncThunk<void, { name: string; email: string; password: string }, { rejectValue: string }>(
+// --- Thunks ---
+
+export const registerUser = createAsyncThunk<
+  void,
+  { name: string; email: string; password: string },
+  { rejectValue: string }
+>(
   'auth/registerUser',
   async (userData, { rejectWithValue }) => {
     try {
@@ -68,7 +76,11 @@ export const loginUser = createAsyncThunk<
   }
 );
 
-export const fetchCurrentProfile = createAsyncThunk<User, void, { rejectValue: string }>(
+export const fetchCurrentProfile = createAsyncThunk<
+  User,
+  void,
+  { rejectValue: string }
+>(
   'auth/fetchProfile',
   async (_, { rejectWithValue }) => {
     try {
@@ -85,7 +97,11 @@ export const fetchCurrentProfile = createAsyncThunk<User, void, { rejectValue: s
   }
 );
 
-export const saveProfile = createAsyncThunk<User, FormData, { rejectValue: string }>(
+export const saveProfile = createAsyncThunk<
+  User,
+  FormData,
+  { rejectValue: string }
+>(
   'auth/saveProfile',
   async (formData, { rejectWithValue }) => {
     try {
@@ -104,7 +120,11 @@ export const saveProfile = createAsyncThunk<User, FormData, { rejectValue: strin
   }
 );
 
-export const forgotPassword = createAsyncThunk<void, string, { rejectValue: string }>(
+export const forgotPassword = createAsyncThunk<
+  void,
+  string,
+  { rejectValue: string }
+>(
   'auth/forgotPassword',
   async (email, { rejectWithValue }) => {
     try {
@@ -120,7 +140,11 @@ export const forgotPassword = createAsyncThunk<void, string, { rejectValue: stri
   }
 );
 
-export const resetPassword = createAsyncThunk<void, { token: string; newPassword: string }, { rejectValue: string }>(
+export const resetPassword = createAsyncThunk<
+  void,
+  { token: string; newPassword: string },
+  { rejectValue: string }
+>(
   'auth/resetPassword',
   async (data, { rejectWithValue }) => {
     try {
@@ -136,7 +160,11 @@ export const resetPassword = createAsyncThunk<void, { token: string; newPassword
   }
 );
 
-export const verifyEmail = createAsyncThunk<void, string, { rejectValue: string }>(
+export const verifyEmail = createAsyncThunk<
+  void,
+  string,
+  { rejectValue: string }
+>(
   'auth/verifyEmail',
   async (token, { rejectWithValue }) => {
     try {
@@ -151,6 +179,8 @@ export const verifyEmail = createAsyncThunk<void, string, { rejectValue: string 
     }
   }
 );
+
+// --- Slice ---
 
 const authSlice = createSlice({
   name: 'auth',
@@ -179,65 +209,143 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(registerUser.pending, (state) => { state.status = 'loading'; state.loading = true; state.error = null; });
-    builder.addCase(registerUser.fulfilled, (state) => { state.status = 'succeeded'; state.loading = false; });
-    builder.addCase(registerUser.rejected, (state, action) => { state.status = 'failed'; state.loading = false; state.error = action.payload || 'Registration failed'; });
+    // registerUser
+    builder
+      .addCase(registerUser.pending, (state) => {
+        state.status = 'loading';
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state) => {
+        state.status = 'succeeded';
+        state.loading = false;
+      })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.status = 'failed';
+        state.loading = false;
+        state.error = action.payload || 'Registration failed';
+      });
 
-    builder.addCase(loginUser.pending, (state) => { state.status = 'loading'; state.loading = true; state.error = null; });
-    builder.addCase(loginUser.fulfilled, (state, action) => {
-      state.status = 'succeeded';
-      state.loading = false;
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      localStorage.setItem('token', action.payload.token);
-      localStorage.setItem('user', JSON.stringify(action.payload.user));
-    });
-    builder.addCase(loginUser.rejected, (state, action) => { state.status = 'failed'; state.loading = false; state.error = action.payload || 'Login failed'; });
+    // loginUser
+    builder
+      .addCase(loginUser.pending, (state) => {
+        state.status = 'loading';
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.loading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        localStorage.setItem('token', action.payload.token);
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
+      })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.status = 'failed';
+        state.loading = false;
+        state.error = action.payload || 'Login failed';
+      });
 
-    builder.addCase(fetchCurrentProfile.pending, (state) => { state.status = 'loading'; state.loading = true; state.error = null; });
-    builder.addCase(fetchCurrentProfile.fulfilled, (state, action) => {
-      state.status = 'succeeded';
-      state.loading = false;
-      state.user = action.payload;
-      localStorage.setItem('user', JSON.stringify(action.payload));
-    });
-    builder.addCase(fetchCurrentProfile.rejected, (state, action) => { state.status = 'failed'; state.loading = false; state.error = action.payload || 'Failed to load profile'; });
+    // fetchCurrentProfile
+    builder
+      .addCase(fetchCurrentProfile.pending, (state) => {
+        state.status = 'loading';
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCurrentProfile.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.loading = false;
+        state.user = action.payload;
+        localStorage.setItem('user', JSON.stringify(action.payload));
+      })
+      .addCase(fetchCurrentProfile.rejected, (state, action) => {
+        state.status = 'failed';
+        state.loading = false;
+        state.error = action.payload || 'Failed to load profile';
+      });
 
-    builder.addCase(saveProfile.pending, (state) => { state.status = 'loading'; state.loading = true; state.error = null; });
-    builder.addCase(saveProfile.fulfilled, (state, action) => {
-      state.status = 'succeeded';
-      state.loading = false;
-      state.user = action.payload;
-      localStorage.setItem('user', JSON.stringify(action.payload));
-    });
-    builder.addCase(saveProfile.rejected, (state, action) => { state.status = 'failed'; state.loading = false; state.error = action.payload || 'Failed to save profile'; });
+    // saveProfile
+    builder
+      .addCase(saveProfile.pending, (state) => {
+        state.status = 'loading';
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(saveProfile.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.loading = false;
+        state.user = action.payload;
+        localStorage.setItem('user', JSON.stringify(action.payload));
+      })
+      .addCase(saveProfile.rejected, (state, action) => {
+        state.status = 'failed';
+        state.loading = false;
+        state.error = action.payload || 'Failed to save profile';
+      });
 
-    builder.addCase(forgotPassword.pending, (state) => { state.loading = true; state.error = null; });
-    builder.addCase(forgotPassword.fulfilled, (state) => { state.loading = false; });
-    builder.addCase(forgotPassword.rejected, (state, action) => { state.loading = false; state.error = action.payload || 'Failed to send reset email'; });
+    // forgotPassword
+    builder
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to send reset email';
+      });
 
-    builder.addCase(resetPassword.pending, (state) => { state.loading = true; state.error = null; });
-    builder.addCase(resetPassword.fulfilled, (state) => { state.loading = false; });
-    builder.addCase(resetPassword.rejected, (state, action) => { state.loading = false; state.error = action.payload || 'Password reset failed'; });
+    // resetPassword
+    builder
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Password reset failed';
+      });
 
-    builder.addCase(verifyEmail.pending, (state) => { state.loading = true; state.error = null; });
-    builder.addCase(verifyEmail.fulfilled, (state) => { state.loading = false; });
-    builder.addCase(verifyEmail.rejected, (state, action) => { state.loading = false; state.error = action.payload || 'Email verification failed'; });
+    // verifyEmail
+    builder
+      .addCase(verifyEmail.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyEmail.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(verifyEmail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Email verification failed';
+      });
 
-    builder.addCase(changeUserRole.fulfilled, (state, action) => {
-      const { user: updatedUser, token: updatedToken } = action.payload;
-      if (state.user && state.user.id === updatedUser.id) {
+    // changeUserRole — update both user & token immediately
+    builder
+      .addCase(changeUserRole.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changeUserRole.fulfilled, (state, action) => {
+        const { user: updatedUser, token: updatedToken } = action.payload;
+        state.user = updatedUser;
         state.token = updatedToken;
         localStorage.setItem('token', updatedToken);
         localStorage.setItem('user', JSON.stringify(updatedUser));
-      }
-      state.error = null;
-      state.loading = false;
-    });
-    builder.addCase(changeUserRole.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload || 'Failed to update role';
-    });
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(changeUserRole.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update role';
+      });
   },
 });
 

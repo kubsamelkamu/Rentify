@@ -8,6 +8,7 @@ import { loginUser, clearError } from '@/store/slices/authSlice';
 import { Mail, Lock, Eye, EyeOff, Loader } from 'lucide-react';
 
 export default function LoginPage() {
+
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { error: apiError, user } = useAppSelector((state) => state.auth);
@@ -20,7 +21,6 @@ export default function LoginPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const isMountedRef = useRef(true);
 
-  // Clear API error on mount
   useEffect(() => {
     dispatch(clearError());
     
@@ -29,12 +29,11 @@ export default function LoginPage() {
     };
   }, [dispatch]);
 
-  // Redirect based on role once user logs in
   useEffect(() => {
     if (!user) return;
     if (user.role === 'ADMIN') {
       router.push('/admin');
-    } else {
+    }else {
       const destination = redirect ? decodeURIComponent(redirect) : '/properties';
       router.push(destination);
     }
@@ -67,7 +66,6 @@ export default function LoginPage() {
     setIsProcessing(true);
     
     try {
-      // Attempt login
       await dispatch(loginUser({ email, password })).unwrap();
     } catch (err: unknown) {
       if (isMountedRef.current) {
