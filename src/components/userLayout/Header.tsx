@@ -18,6 +18,7 @@ interface SubItem {
 }
 
 const baseNavItems: NavItem[] = [
+  { label: 'Home', href: '/home' },
   { label: 'About', href: '/about' },
   {
     label: 'Properties',
