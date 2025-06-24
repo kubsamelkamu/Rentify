@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { useEffect, useState, useContext, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProperties } from '@/store/slices/propertySlice';
+import { fetchPropertyReviews } from '@/store/slices/reviewSlice';
 import FilterPanel, { PropertyFilters } from './FilterPanel';
 import { motion } from 'framer-motion';
+import { Bed,Bath, Star } from 'lucide-react';
 import UserLayout from '@/components/userLayout/Layout';
 import { ThemeContext } from '@/components/context/ThemeContext';
 import HeroSection from '@/components/hero/HeroSection';
@@ -16,7 +18,9 @@ const PropertiesListPage: NextPage = () => {
 
   const dispatch = useAppDispatch();
   const { items, loading, error } = useAppSelector((s) => s.properties);
+  const { reviewsByProperty } = useAppSelector((s) => s.reviews);
   const { theme } = useContext(ThemeContext)!;
+
   const [filters, setFilters] = useState<PropertyFilters>({});
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -37,6 +41,16 @@ const PropertiesListPage: NextPage = () => {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  useEffect(() => {
+    if (items.length) {
+      items.forEach((prop) => {
+        if (!reviewsByProperty[prop.id]) {
+          dispatch(fetchPropertyReviews({ propertyId: prop.id, page: 1, limit: 1 }));
+        }
+      });
+    }
+  }, [dispatch, items, reviewsByProperty]);
 
   useEffect(() => {
     const token = localStorage.getItem('token') ?? '';
@@ -73,15 +87,8 @@ const PropertiesListPage: NextPage = () => {
           <FilterPanel
             initial={filters}
             onCityChange={setCityTyping}
-            onApply={(f) => {
-              setFilters(f);
-              setPage(1);
-            }}
-            onReset={() => {
-              setFilters({});
-              setCityTyping('');
-              setPage(1);
-            }}
+            onApply={(f) => { setFilters(f); setPage(1); }}
+            onReset={() => { setFilters({}); setCityTyping(''); setPage(1); }}
           />
 
           {loading ? (
@@ -96,9 +103,7 @@ const PropertiesListPage: NextPage = () => {
               ))}
             </div>
           ) : error ? (
-            <p className={`text-center mt-12 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
-              {error}
-            </p>
+            <p className={`text-center mt-12 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
           ) : items.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -113,63 +118,78 @@ const PropertiesListPage: NextPage = () => {
               >
                 🏡
               </motion.div>
-              <h2 className="text-2xl font-bold">
-                No treasures found!
-              </h2>
+              <h2 className="text-2xl font-bold">No treasures found!</h2>
               <p className="mt-2 text-gray-500">
                 Tweak your filters or explore a new city — your perfect spot is out there.
               </p>
             </motion.div>
           ) : (
             <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((prop, idx) => (
-                <Link
-                  key={prop.id}
-                  href={`/properties/${prop.id}`}
-                  className={`group block rounded-2xl overflow-hidden shadow-lg transition-transform hover:-translate-y-1 duration-200 ${
-                    theme === 'dark'
-                      ? 'bg-gray-800 shadow-gray-800/50 hover:shadow-gray-700/50'
-                      : 'bg-white hover:shadow-2xl'
-                  }`}
-                >
-                  <div className="relative h-60 w-full bg-gray-200">
-                    {prop.images?.[0] ? (
-                      <Image
-                        src={prop.images[0].url}
-                        alt={prop.images[0].fileName}
-                        fill
-                        sizes="(max-width: 640px) 100vw, 33vw"
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        priority={idx === 0}
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-400">
-                        No Image
+              {items.map((prop, idx) => {
+                const bucket = reviewsByProperty[prop.id];
+                return (
+                  <div
+                    key={prop.id}
+                    className={`group block rounded-2xl overflow-hidden shadow-lg transition-transform hover:-translate-y-1 duration-200 ${
+                      theme === 'dark'
+                        ? 'bg-gray-800 shadow-gray-800/50 hover:shadow-gray-700/50'
+                        : 'bg-white hover:shadow-2xl'
+                    }`}
+                  >
+                    <Link href={`/properties/${prop.id}`}
+                     className="relative block h-60 w-full bg-gray-200">
+                        {prop.images?.[0] ? (
+                          <Image
+                            src={prop.images[0].url}
+                            alt={prop.images[0].fileName}
+                            layout="fill"
+                            sizes="(max-width: 640px) 100vw, 33vw"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            priority={idx === 0}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-gray-400">No Image</div>
+                        )}
+                    </Link>
+                    <div className="p-6">
+                      {bucket?.loading ? (
+                        <span className="text-sm text-gray-400">Loading reviews…</span>
+                      ) : (
+                        <div className="flex items-center text-sm text-yellow-500 mb-2">
+                          <Star className="mr-1" size={14} />
+                          <span>{bucket?.averageRating.toFixed(1)}</span>
+                          <span className="ml-1 text-gray-600">({bucket?.count})</span>
+                        </div>
+                      )}
+
+                      <h2 className="text-2xl font-semibold mb-1">{prop.title}</h2>
+                      <p className="text-gray-500 mb-2">{prop.city}</p>
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-xl font-bold">{prop.rentPerMonth} Birr/month</span>
+                        <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                          {prop.propertyType}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <h2 className="text-2xl font-semibold mb-1">{prop.title}</h2>
-                    <p className="text-gray-500">{prop.city}</p>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xl font-bold">
-                        Birr {prop.rentPerMonth}/mo
-                      </span>
-                      <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                        {prop.propertyType}
-                      </span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <span>{prop.numBedrooms} bd</span>
-                      <span className="mx-2">·</span>
-                      <span>{prop.numBathrooms} ba</span>
+                      <div className="flex items-center text-sm text-gray-600 space-x-4 mb-4">
+                        <div className="flex items-center">
+                          <Bed className="mr-1" size={16} />
+                          <span>{prop.numBedrooms}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Bath className="mr-1" size={16} />
+                          <span>{prop.numBathrooms}</span>
+                        </div>
+                      </div>
+                      <Link href={`/properties/${prop.id}`}
+                      className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                          View Details
+                      </Link>
                     </div>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           )}
-
           <div className="flex justify-center space-x-2 mt-10">
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 1))}

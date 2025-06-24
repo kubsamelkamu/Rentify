@@ -13,7 +13,7 @@ import { ThemeContext } from '@/components/context/ThemeContext';
 import Head from 'next/head';
 
 const PropertyDetailPage: React.FC = () => {
-  
+
   const router = useRouter();
   const { id } = router.query;
   const dispatch = useAppDispatch();
@@ -30,6 +30,17 @@ const PropertyDetailPage: React.FC = () => {
       dispatch(fetchPropertyById(id));
     }
   }, [id, dispatch]);
+
+  const rent = current ? Number(current.rentPerMonth) : 0;
+  const annual = rent * 12;
+  const weekly = Math.round(rent / 4.345);
+  const deposit = rent * 2;
+  const formatter = new Intl.NumberFormat('en-US');
+
+  const isLoggedIn = Boolean(authUser);
+  const isTenant = authUser?.role === 'TENANT';
+  const isPropLandlord =
+    authUser?.role === 'LANDLORD' && authUser.id === current?.landlord?.id;
 
   const handleDelete = async () => {
     if (!current?.id) return;
@@ -63,21 +74,17 @@ const PropertyDetailPage: React.FC = () => {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const isLoggedIn = !!authUser;
-  const isTenant = authUser?.role === 'TENANT';
-  const isPropLandlord =
-    authUser?.role === 'LANDLORD' && authUser.id === current?.landlord?.id;
-
   return (
     <UserLayout>
       <Head>
-        <title> Rentify | Properties</title>
+        <title>Rentify | Property Details</title>
         <meta
           name="description"
-          content="View property details, images, and request bookings. Connect with landlords or tenants."
+          content="View property details, images, amenities, and request bookings."
         />
-        <link rel="canonical" href="/booking" />
+        <link rel="canonical" href={`/properties/${id}`} />
       </Head>
+
       <div
         className={`min-h-screen py-8 px-4 lg:px-0 ${
           theme === 'light'
@@ -96,12 +103,15 @@ const PropertyDetailPage: React.FC = () => {
         )}
 
         {error && <p className="text-center text-red-500">{error}</p>}
+
         {!loading && current && (
           <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="col-span-2 space-y-6">
               <div
                 className={`rounded-2xl overflow-hidden ${
-                  theme === 'light' ? 'bg-white shadow-md' : 'bg-gray-800 shadow-gray-800/50'
+                  theme === 'light'
+                    ? 'bg-white shadow-md'
+                    : 'bg-gray-800 shadow-gray-800/50'
                 }`}
               >
                 {current.images?.length ? (
@@ -111,9 +121,16 @@ const PropertyDetailPage: React.FC = () => {
                         key={img.id}
                         whileHover={{ scale: 1.02 }}
                         transition={{ duration: 0.3 }}
-                        className={`relative ${idx === 0 ? 'col-span-2 row-span-2 h-96' : 'h-48'}`}
+                        className={`relative ${
+                          idx === 0 ? 'col-span-2 row-span-2 h-96' : 'h-48'
+                        }`}
                       >
-                        <Image src={img.url} alt={img.fileName} fill className="object-cover" />
+                        <Image
+                          src={img.url}
+                          alt={img.fileName}
+                          fill
+                          className="object-cover"
+                        />
                       </motion.div>
                     ))}
                   </div>
@@ -125,18 +142,34 @@ const PropertyDetailPage: React.FC = () => {
               </div>
               <div
                 className={`p-6 rounded-2xl ${
-                  theme === 'light' ? 'bg-white shadow-md' : 'bg-gray-800 shadow-gray-800/50'
+                  theme === 'light'
+                    ? 'bg-white shadow-md'
+                    : 'bg-gray-800 shadow-gray-800/50'
                 }`}
               >
                 <h1 className="text-3xl lg:text-4xl font-bold mb-2">
                   {current.title}
                 </h1>
                 <p className="text-lg text-gray-500 mb-4">{current.city}</p>
-
+                <div className="mt-6">
+                  <h2 className="text-2xl font-semibold mb-2">
+                    Description
+                  </h2>
+                  <p
+                    className={`${
+                      theme === 'light'
+                        ? 'text-gray-700'
+                        : 'text-gray-200'
+                    }`}
+                  >
+                    {current.description}
+                  </p>
+                </div>
+                
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 space-y-2 sm:space-y-0">
                   <div>
                     <span className="text-2xl font-extrabold">
-                      {current.rentPerMonth} Birr/mo
+                      {formatter.format(rent)} Birr /month
                     </span>
                     <span className="ml-4 px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
                       {current.propertyType}
@@ -144,11 +177,10 @@ const PropertyDetailPage: React.FC = () => {
                   </div>
                   {isPropLandlord && (
                     <div className="flex space-x-2">
-                      <Link
-                        href={`/properties/${current.id}/edit`}
-                        className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
-                      >
-                        Edit
+                      <Link href={`/properties/${current.id}/edit`} passHref>
+                        <a className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
+                          Edit
+                        </a>
                       </Link>
                       <button
                         onClick={handleDelete}
@@ -159,14 +191,53 @@ const PropertyDetailPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-
-                <p className={`mb-6 ${theme === 'light' ? 'text-gray-700' : 'text-gray-200'}`}>
-                  {current.description}
-                </p>
-                <div className="border-t pt-4">
-                  <h2 className="text-xl font-semibold mb-2">Owner Information</h2>
+                <div className="border-t pt-6">
+                  <h2 className="text-2xl font-semibold mb-4">
+                    Rent Details
+                  </h2>
+                  <dl className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                    <div>
+                      <dt className="font-medium">Monthly Rent</dt>
+                      <dd>{formatter.format(rent)} Birr</dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium">Annual Total</dt>
+                      <dd>{formatter.format(annual)} Birr</dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium">Weekly (est.)</dt>
+                      <dd>{formatter.format(weekly)} Birr</dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium">Security Deposit</dt>
+                      <dd>{formatter.format(deposit)} Birr</dd>
+                    </div>
+                  </dl>
+                </div>
+                {current.amenities?.length > 0 && (
+                  <div className="mt-6">
+                    <h2 className="text-2xl font-semibold mb-4">
+                      Amenities
+                    </h2>
+                    <ul className="flex flex-wrap gap-2">
+                      {current.amenities.map((amenity) => (
+                        <li
+                          key={amenity}
+                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                        >
+                          {amenity}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="border-t pt-4 mt-6">
+                  <h2 className="text-xl font-semibold mb-2">
+                    Owner Information
+                  </h2>
                   <p>
-                    <span className="font-medium">Name:</span> {current.landlord?.name || '—'}
+                    <span className="font-medium">Name:</span>{' '}
+                    {current.landlord?.name || '—'}
                   </p>
                   <p>
                     <span className="font-medium">Email:</span>{' '}
@@ -182,22 +253,28 @@ const PropertyDetailPage: React.FC = () => {
                     )}
                   </p>
                 </div>
-                <div className="mt-8">
-                  <PropertyReviews propertyId={current.id} />
-                </div>
+                {isTenant && (
+                  <div className="mt-8">
+                    <PropertyReviews propertyId={current.id} />
+                  </div>
+                )}
               </div>
             </div>
             <div className="space-y-6">
               <div
                 className={`p-6 rounded-2xl space-y-4 ${
-                  theme === 'light' ? 'bg-white shadow-md' : 'bg-gray-800 shadow-gray-800/50'
+                  theme === 'light'
+                    ? 'bg-white shadow-md'
+                    : 'bg-gray-800 shadow-gray-800/50'
                 }`}
               >
                 {!isLoggedIn ? (
                   <button
                     onClick={() =>
                       router.push(
-                        `/auth/login?redirect=${encodeURIComponent(router.asPath)}`
+                        `/auth/login?redirect=${encodeURIComponent(
+                          router.asPath
+                        )}`
                       )
                     }
                     className="w-full py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
@@ -206,7 +283,9 @@ const PropertyDetailPage: React.FC = () => {
                   </button>
                 ) : isTenant && !isPropLandlord ? (
                   <>
-                    <h2 className="text-2xl font-semibold mb-4">Request Booking</h2>
+                    <h2 className="text-2xl font-semibold mb-4">
+                      Request Booking
+                    </h2>
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium mb-1">
@@ -253,22 +332,24 @@ const PropertyDetailPage: React.FC = () => {
                 ) : isPropLandlord ? (
                   <Link
                     href={`/properties/${current.id}/bookings`}
-                    className="block text-center py-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition"
-                  >
-                    View Booking Requests
+                    passHref
+                    className="block text-center py-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition">
+                      View Booking Requests
                   </Link>
                 ) : null}
               </div>
               <div>
                 <Link
                   href={
-                    authUser
+                    isLoggedIn
                       ? `/properties/${current.id}/chat`
-                      : `/auth/login?redirect=${encodeURIComponent(router.asPath)}`
+                      : `/auth/login?redirect=${encodeURIComponent(
+                          router.asPath
+                        )}`
                   }
-                  className="w-full block text-center py-3 bg-green-600 text-white rounded-full hover:bg-green-700 transition"
-                >
-                  Chat with {isPropLandlord ? 'Tenant' : 'Owner'}
+                  passHref
+                  className="w-full block text-center py-3 bg-green-600 text-white rounded-full hover:bg-green-700 transition">
+                    Chat with {isPropLandlord ? 'Tenant' : 'Owner'}
                 </Link>
               </div>
             </div>
