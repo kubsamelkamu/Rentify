@@ -1,7 +1,7 @@
-import AboutPage from "./about";
+import HomePage from "./home";
 
-export default function HomePage() {
+export default function Home() {
   return(
-    <AboutPage/>
+    <HomePage/>
   );
 }
