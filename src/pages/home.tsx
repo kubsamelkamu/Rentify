@@ -160,57 +160,33 @@ export default function HomePage() {
             ))}
           </div>
         </section>
-        {/* Join the Rental Revolution */}
-        <section className="py-16 px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="max-w-4xl mx-auto"
-          >
-            <h2
-              className={`text-3xl font-bold mb-6 ${
-                theme === 'light' ? 'text-gray-900' : 'text-gray-100'
+          
+        <div className="flex justify-center gap-4">
+          <motion.div whileHover={{ scale: 1.05 }}>
+            <Link
+              href="/auth/register"
+              className={`px-8 py-3 rounded-lg transition-colors ${
+                theme === 'light'
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  : 'bg-indigo-700 text-gray-100 hover:bg-indigo-600'
               }`}
             >
-              Join the Rental Revolution
-            </h2>
-            <p
-              className={`mb-8 ${
-                theme === 'light' ? 'text-gray-600' : 'text-gray-300'
-              }`}
-            >
-              Whether you’re listing a property or searching for your next home,&nbsp;
-              Rentify makes the process simple, secure, and satisfying.
-            </p>
-            <div className="flex justify-center gap-4">
-              <motion.div whileHover={{ scale: 1.05 }}>
-                <Link
-                  href="/auth/register"
-                  className={`px-8 py-3 rounded-lg transition-colors ${
-                    theme === 'light'
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'bg-indigo-700 text-gray-100 hover:bg-indigo-600'
-                  }`}
-                >
-                  Get Started
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }}>
-                <Link
-                  href="/properties"
-                  className={`border-2 px-8 py-3 rounded-lg transition-colors ${
-                    theme === 'light'
-                      ? 'border-indigo-600 text-indigo-600 hover:bg-indigo-50'
-                      : 'border-indigo-400 text-indigo-300 hover:bg-gray-800'
-                  }`}
-                >
-                  Browse Listings
-                </Link>
-              </motion.div>
-            </div>
+              Get Started
+            </Link>
           </motion.div>
-        </section>
+          <motion.div whileHover={{ scale: 1.05 }}>
+            <Link
+              href="/properties"
+              className={`border-2 px-8 py-3 rounded-lg transition-colors ${
+                theme === 'light'
+                  ? 'border-indigo-600 text-indigo-600 hover:bg-indigo-50'
+                  : 'border-indigo-400 text-indigo-300 hover:bg-gray-800'
+              }`}
+            >
+              Browse Listings
+            </Link>
+          </motion.div>
+        </div>
       </div>
     </UserLayout>
   );
