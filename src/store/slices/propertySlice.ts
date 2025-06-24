@@ -55,6 +55,7 @@ export interface FetchPropertiesParams {
 interface PropertyState {
   items: Property[];
   current?: Property;
+  totalCount: number;
   loading: boolean;
   error: string | null;
 }
@@ -62,6 +63,7 @@ interface PropertyState {
 const initialState: PropertyState = {
   items: [],
   current: undefined,
+  totalCount: 0,
   loading: false,
   error: null,
 };
@@ -100,6 +102,26 @@ export const fetchProperties = createAsyncThunk<
     }
   }
 );
+
+export const fetchPropertyCount = createAsyncThunk<
+  number,
+  void,
+  { rejectValue: string }
+>('properties/fetchCount', async (_, { rejectWithValue }) => {
+  try {
+    const response = await api.get('/api/properties?limit=1');
+    return response.data.total as number;
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      return rejectWithValue(err.response?.data?.error || err.message);
+    }
+    if (err instanceof Error) {
+      return rejectWithValue(err.message);
+    }
+    return rejectWithValue('Failed to fetch property count');
+  }
+});
+
 
 
 export const fetchPropertyById = createAsyncThunk<
@@ -195,6 +217,12 @@ const propertySlice = createSlice({
       .addCase(fetchProperties.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? 'Failed to fetch properties';
+      })
+      .addCase(fetchPropertyCount.fulfilled, (state, action: PayloadAction<number>) => {
+        state.totalCount = action.payload;
+      })
+      .addCase(fetchPropertyCount.rejected, (state, action) => {
+        state.error = action.payload ?? 'Failed to fetch property count';
       })
       .addCase(fetchPropertyById.pending, (state) => {
         state.loading = true;
