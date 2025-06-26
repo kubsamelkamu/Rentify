@@ -17,7 +17,6 @@ interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 const InputField = ({ id, label, icon: Icon, type, ...props }: InputFieldProps) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const isPasswordType = type === 'password';
-
   const currentType = isPasswordType ? (isPasswordVisible ? 'text' : 'password') : type;
 
   return (
@@ -51,10 +50,10 @@ const InputField = ({ id, label, icon: Icon, type, ...props }: InputFieldProps) 
 };
 
 export default function RegisterPage() {
-  
+
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const {  error: apiError } = useAppSelector((state) => state.auth);
+  const { error: apiError } = useAppSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -65,7 +64,6 @@ export default function RegisterPage() {
   const [agree, setAgree] = useState(false);
   const [formError, setFormError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-
   const { name, email, password, confirmPassword } = formData;
 
   useEffect(() => {
@@ -81,20 +79,25 @@ export default function RegisterPage() {
     e.preventDefault();
     setFormError('');
 
+    const nameRegex = /^[A-Za-z\s.]+$/;
+    if (!nameRegex.test(name)) {
+      setFormError('Full Name can only contain letters and spaces.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setFormError('Passwords do not match.');
       return;
     }
 
     setIsProcessing(true);
-    
     try {
       const startTime = Date.now();
       const result = await dispatch(registerUser({ name, email, password }));
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, 5000 - elapsed);
-      await new Promise(resolve => setTimeout(resolve, remaining));
-      
+      await new Promise((resolve) => setTimeout(resolve, remaining));
+
       if (registerUser.fulfilled.match(result)) {
         router.push('/auth/verify-email-info');
       }
