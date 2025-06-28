@@ -2,7 +2,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import adminReducer from '@/store/slices/adminSlice'
 import authReducer from '@/store/slices/authSlice';
 import propertyReducer from '@/store/slices/propertySlice';
-import bookingReducer from '@/store/slices/bookingSlice';  
+import bookingReducer from '@/store/slices/bookingSlice'; 
+import landlordRequestReducer from './slices/landlordRequestSlice'; 
 import paymentReducer from '@/store/slices/paymentSlice';
 import reviewReducer from './slices/reviewSlice';
 
@@ -14,6 +15,7 @@ export const store = configureStore({
     bookings: bookingReducer,  
     payment: paymentReducer,
     reviews: reviewReducer, 
+    landlordRequests: landlordRequestReducer,
   },
 });
 

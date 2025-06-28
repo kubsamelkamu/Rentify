@@ -1,15 +1,14 @@
-// src/pages/become-landlord.tsx
-
 import { NextPage } from 'next';
-import { useEffect, useContext, useState } from 'react';
+import { useEffect, useContext, useState, ChangeEvent } from 'react';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { changeUserRole } from '@/store/slices/adminSlice';
+import { applyForLandlord } from '@/store/slices/authSlice';
 import { ThemeContext } from '@/components/context/ThemeContext';
 import UserLayout from '@/components/userLayout/Layout';
 import toast from 'react-hot-toast';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const BecomeLandlordPage: NextPage = () => {
   const dispatch = useAppDispatch();
@@ -17,9 +16,10 @@ const BecomeLandlordPage: NextPage = () => {
   const { theme } = useContext(ThemeContext)!;
   const user = useAppSelector((s) => s.auth.user);
   const token = useAppSelector((s) => s.auth.token);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const loading = useAppSelector((s) => s.auth.loading);
 
-  // If not logged in, redirect to login and come back here after
+  const [files, setFiles] = useState<File[]>([]);
+
   useEffect(() => {
     if (!user || !token) {
       router.replace(
@@ -28,29 +28,33 @@ const BecomeLandlordPage: NextPage = () => {
     }
   }, [user, token, router]);
 
-  // If already a landlord/admin, go to list page
   useEffect(() => {
     if (user?.role === 'LANDLORD' || user?.role === 'ADMIN') {
-      router.replace('/properties/list');
+      router.replace('/profile');
     }
   }, [user, router]);
 
-  const handleBecomeLandlord = async () => {
-    if (!user) return;
-    setIsSubmitting(true);
+  const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    setFiles(Array.from(e.target.files).slice(0, 5));
+  };
+
+  const handleSubmit = async () => {
+    if (files.length === 0) {
+      toast.error('Please upload at least one document.');
+      return;
+    }
+
+    const formData = new FormData();
+    files.forEach((file) => formData.append('docs', file));
 
     try {
-      // dispatch the role change; authSlice will pick up new user+token
-      await dispatch(
-        changeUserRole({ userId: user.id, role: 'LANDLORD' })
-      ).unwrap();
-
-      toast.success('🎉 You are now a landlord!');
-      router.replace('/properties/list');
+      await dispatch(applyForLandlord(formData)).unwrap();
+      toast.success('🎉 Application submitted! Awaiting review.');
+      router.replace('/profile');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error('Could not upgrade role: ' + msg);
-      setIsSubmitting(false);
+      const message = err instanceof Error ? err.message : 'Failed to submit application';
+      toast.error(message);
     }
   };
 
@@ -60,7 +64,7 @@ const BecomeLandlordPage: NextPage = () => {
         <title>Rentify | Become Landlord</title>
         <meta
           name="description"
-          content="Upgrade your account to become a landlord and start listing properties on Rentify."
+          content="Upload verification documents to become a landlord on Rentify."
         />
       </Head>
       <div
@@ -75,41 +79,63 @@ const BecomeLandlordPage: NextPage = () => {
         >
           <h1 className="text-3xl font-bold">Become a Landlord</h1>
           <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-            By enrolling as a landlord, you agree to our platform’s{' '}
-            <Link href="/terms&conditions" className="underline hover:text-blue-600">
-              Terms&nbsp;&amp;&nbsp;Conditions
-            </Link>
+            Before listing properties, please upload documents to verify your landlord status.
           </p>
-          <div className="space-y-4">
-            <div
-              className={`max-h-64 overflow-y-auto border rounded-lg p-4 ${
-                theme === 'dark' ? 'bg-gray-700 text-gray-200' : 'bg-gray-50 text-gray-700'
-              }`}
-            >
-              <h2 className="font-semibold mb-2">Terms & Conditions (excerpt)</h2>
-              <ul className="list-disc pl-5 space-y-1 text-sm">
-                <li>You may only list properties you own or manage legally.</li>
-                <li>All property photos must be accurate and up to date.</li>
-                <li>You must respond to tenant inquiries within 48 hours.</li>
-                <li>Monthly rent payments are handled via our integrated payment gateway.</li>
-                <li>Failure to comply may result in suspension of your landlord account.</li>
-              </ul>
-            </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Upload Documents</label>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFilesChange}
+              className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4
+                         file:rounded-full file:border-0
+                         file:text-sm file:font-semibold
+                         file:bg-blue-600 file:text-white
+                         hover:file:bg-blue-700"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              You can upload up to 5 images (ID, license, etc.). JPG/PNG only.
+            </p>
           </div>
 
+          {files.length > 0 && (
+            <div className="grid grid-cols-4 gap-2">
+              {files.map((file, i) => (
+                <div key={i} className="relative w-full h-24 rounded-lg overflow-hidden bg-gray-200">
+                  <Image
+                    src={URL.createObjectURL(file)}
+                    alt={`doc-${i}`}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
           <button
-            onClick={handleBecomeLandlord}
-            disabled={isSubmitting}
+            onClick={handleSubmit}
+            disabled={loading}
             className={`w-full py-3 rounded-lg text-lg font-semibold shadow ${
-              isSubmitting
+              loading
                 ? 'opacity-50 cursor-not-allowed'
                 : theme === 'dark'
                 ? 'bg-blue-700 text-white hover:bg-blue-600'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
           >
-            {isSubmitting ? 'Processing…' : 'I Agree & Become a Landlord'}
+            {loading ? 'Submitting…' : 'Submit Application'}
           </button>
+
+          <p className="text-xs text-gray-500">
+            By submitting, you agree to our{' '}
+            <Link href="/terms&conditions" className="underline hover:text-blue-600">
+              Terms & Conditions
+            </Link>.
+          </p>
         </div>
       </div>
     </UserLayout>
