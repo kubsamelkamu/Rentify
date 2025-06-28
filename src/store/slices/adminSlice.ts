@@ -18,8 +18,10 @@ export interface User {
   name: string;
   email: string;
   role: 'TENANT' | 'LANDLORD' | 'ADMIN';
-  createdAt: string;
+  createdAt: string;      
+  profilePhoto?: string;  
 }
+
 
 export interface Booking {
   id: string;
@@ -95,14 +97,31 @@ const initialState: AdminState = {
   error: null,
 };
 
-export const fetchUsers = createAsyncThunk<
-  { data: User[]; meta: UsersPaginationMeta },
-  { page: number; limit: number },
-  { rejectValue: string }
->('admin/fetchUsers', async ({ page, limit }, { rejectWithValue }) => {
-  try {
-    const { data } = await api.get(`/api/admin/users?page=${page}&limit=${limit}`);
-    return data;
+export const fetchUsers = createAsyncThunk(
+  'admin/fetchUsers',
+  async (
+    {
+      page,
+      limit,
+      search = '',
+    }: { page: number; limit: number; search?: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const token = localStorage.getItem('token');
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+      if (search) {
+        queryParams.append('search', search);
+      }
+
+      const response = await api.get(`api/admin/users?${queryParams.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      return response.data;
   } catch (err: unknown) {
     const msg = axios.isAxiosError(err)
       ? err.response?.data?.error || err.message
@@ -111,9 +130,9 @@ export const fetchUsers = createAsyncThunk<
       : 'Failed to fetch users';
     return rejectWithValue(msg);
   }
-});
+  }
+);
 
-// Change user role
 export const changeUserRole = createAsyncThunk<
   { user: User; token: string },
   { userId: string; role: User['role'] },
@@ -345,7 +364,7 @@ const adminSlice = createSlice({
       })
       .addCase(fetchUsers.rejected, (s, { payload }) => {
         s.loading = false;
-        s.error = payload || 'Failed to load users';
+        s.error = typeof payload === 'string' ? payload : 'Failed to load users';
       })
     builder
       .addCase(changeUserRole.pending, (s) => { s.loading = true; s.error = null; })

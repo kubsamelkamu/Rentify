@@ -35,7 +35,7 @@ const ProfilePage: NextPage = () => {
     }
   }, [user, router]);
 
-  // Fetch profile
+
   useEffect(() => {
     dispatch(clearError());
     dispatch(fetchCurrentProfile());

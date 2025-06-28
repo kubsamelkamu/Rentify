@@ -1,21 +1,26 @@
 import { NextPage } from 'next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {fetchUsers,changeUserRole,deleteUser,User as AdminUser,} from '@/store/slices/adminSlice';
+import {fetchUsers,changeUserRole,deleteUser,User as AdminUser,
+} from '@/store/slices/adminSlice';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Head from 'next/head';
-
 import socket, { connectSocket } from '@/utils/socket';
+import { debounce } from '@/utils/debounce';
 
 const AdminUsersPage: NextPage = () => {
 
   const dispatch = useAppDispatch();
   const { users, loading, error, usersPage, usersTotalPages } = useAppSelector(
     (state) => state.admin
-  )!;
+  );
 
   const [page, setPage] = useState<number>(usersPage);
+  const [search, setSearch] = useState('');
+  const [changingRoleIds, setChangingRoleIds] = useState<Record<string, boolean>>({});
+  const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({});
+
   const limit = 5;
 
   useEffect(() => {
@@ -23,23 +28,25 @@ const AdminUsersPage: NextPage = () => {
     connectSocket(token);
 
     const handleNewUser = (newUser: AdminUser) => {
-      toast(
-        `New user joined: ${newUser.name}`,
-        { icon: '👤' }
-      );
+      toast(`New user joined: ${newUser.name}`, { icon: '👤' });
     };
 
     socket.on('admin:newUser', handleNewUser);
     return () => {
       socket.off('admin:newUser', handleNewUser);
     };
-  }, [dispatch]);
+  }, []);
 
   useEffect(() => {
-    dispatch(fetchUsers({ page, limit }));
-  }, [dispatch, page]);
+    dispatch(fetchUsers({ page, limit, search }));
+  }, [dispatch, page, search]);
 
-  const [changingRoleIds, setChangingRoleIds] = useState<Record<string, boolean>>({});
+  const debouncedSearch = debounce((...args: unknown[]) => {
+    const value = args[0] as string;
+    setPage(1); 
+    setSearch(value);
+  }, 500);
+
   const handleRoleChange = async (userId: string, newRole: AdminUser['role']) => {
     setChangingRoleIds((m) => ({ ...m, [userId]: true }));
     try {
@@ -57,7 +64,6 @@ const AdminUsersPage: NextPage = () => {
     }
   };
 
-  const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({});
   const handleDeleteUser = async (userId: string) => {
     setDeletingIds((m) => ({ ...m, [userId]: true }));
     try {
@@ -75,8 +81,13 @@ const AdminUsersPage: NextPage = () => {
     }
   };
 
-  const handlePrev = () => { if (page > 1) setPage(page - 1); };
-  const handleNext = () => { if (page < usersTotalPages) setPage(page + 1); };
+  const handlePrev = () => {
+    if (page > 1) setPage(page - 1);
+  };
+
+  const handleNext = () => {
+    if (page < usersTotalPages) setPage(page + 1);
+  };
 
   return (
     <AdminLayout>
@@ -84,24 +95,29 @@ const AdminUsersPage: NextPage = () => {
         <title>Rentify | Manage Users</title>
         <meta
           name="description"
-          content="Admin page to manage users for Rentify, including real-time updates." />
+          content="Admin page to manage users for Rentify, including real-time updates."
+        />
       </Head>
       <div className="flex flex-col space-y-6">
-        <div className="p-4 bg-blue-600 rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-blue-600 rounded-lg space-y-4 sm:space-y-0">
           <h1 className="text-2xl font-bold text-white">Manage Users</h1>
-        </div>
 
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            onChange={(e) => debouncedSearch(e.target.value)}
+            className="px-3 py-2 rounded border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+          />
+        </div>
         {loading && (
           <div className="flex justify-center py-10">
             <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full" />
           </div>
         )}
-
         {error && <p className="text-red-500">Error loading users: {error}</p>}
         {!loading && !error && users.length === 0 && (
           <p className="text-gray-600">No users found.</p>
         )}
-
         {!loading && !error && users.length > 0 && (
           <>
             <div className="overflow-x-auto">
@@ -120,12 +136,16 @@ const AdminUsersPage: NextPage = () => {
                     <tr key={u.id}>
                       <td className="px-4 py-3 whitespace-nowrap">{u.name}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <a href={`mailto:${u.email}`} className="text-blue-600">{u.email}</a>
+                        <a href={`mailto:${u.email}`} className="text-blue-600">
+                          {u.email}
+                        </a>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <select
                           value={u.role}
-                          onChange={(e) => handleRoleChange(u.id, e.target.value as AdminUser['role'])}
+                          onChange={(e) =>
+                            handleRoleChange(u.id, e.target.value as AdminUser['role'])
+                          }
                           disabled={changingRoleIds[u.id]}
                           className="px-2 py-1 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
                         >
@@ -134,7 +154,9 @@ const AdminUsersPage: NextPage = () => {
                           <option value="ADMIN">Admin</option>
                         </select>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap text-center">
                         <button
                           onClick={() => handleDeleteUser(u.id)}
@@ -143,7 +165,8 @@ const AdminUsersPage: NextPage = () => {
                             deletingIds[u.id]
                               ? 'opacity-50 cursor-not-allowed'
                               : 'bg-red-500 hover:bg-red-600 text-white'
-                          }`}>
+                          }`}
+                        >
                           {deletingIds[u.id] ? 'Deleting…' : 'Delete'}
                         </button>
                       </td>
@@ -157,22 +180,30 @@ const AdminUsersPage: NextPage = () => {
               <button
                 onClick={handlePrev}
                 disabled={page <= 1}
-                className={`px-3 py-1 rounded ${ page <= 1
-                  ? 'opacity-50 cursor-not-allowed bg-blue-400 text-white'
-                  : 'bg-blue-800 hover:bg-blue-700 text-white' }
-                `}
-              >Previous</button>
+                className={`px-3 py-1 rounded ${
+                  page <= 1
+                    ? 'opacity-50 cursor-not-allowed bg-blue-400 text-white'
+                    : 'bg-blue-800 hover:bg-blue-700 text-white'
+                }`}
+              >
+                Previous
+              </button>
 
-              <span className="text-white">Page {page} of {usersTotalPages}</span>
+              <span className="text-white">
+                Page {page} of {usersTotalPages}
+              </span>
 
               <button
                 onClick={handleNext}
                 disabled={page >= usersTotalPages}
-                className={`px-3 py-1 rounded ${ page >= usersTotalPages
-                  ? 'opacity-50 cursor-not-allowed bg-blue-400 text-white'
-                  : 'bg-blue-800 hover:bg-blue-700 text-white' }
-                `}
-              >Next</button>
+                className={`px-3 py-1 rounded ${
+                  page >= usersTotalPages
+                    ? 'opacity-50 cursor-not-allowed bg-blue-400 text-white'
+                    : 'bg-blue-800 hover:bg-blue-700 text-white'
+                }`}
+              >
+                Next
+              </button>
             </div>
           </>
         )}
