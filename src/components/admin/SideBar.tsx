@@ -14,6 +14,7 @@ const navLinks: {
 }[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/landlord-requests', label: 'Landlord Requests', icon: Users },
   { href: '/admin/properties', label: 'Properties', icon: Home },
   { href: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
   { href: '/admin/reviews', label: 'Reviews', icon: Star },
