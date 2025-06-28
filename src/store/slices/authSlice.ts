@@ -1,5 +1,3 @@
-// src/store/slices/authSlice.ts
-
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import api from '@/utils/api';
@@ -32,8 +30,6 @@ const initialState: AuthState = {
   loading: false,
   error: null,
 };
-
-// --- Thunks ---
 
 export const registerUser = createAsyncThunk<
   void,
@@ -180,7 +176,27 @@ export const verifyEmail = createAsyncThunk<
   }
 );
 
-// --- Slice ---
+export const applyForLandlord = createAsyncThunk<
+  void,
+  FormData,
+  { rejectValue: string }
+>(
+  'auth/applyForLandlord',
+  async (formData, { rejectWithValue }) => {
+    try {
+      await api.post('/api/auth/apply-landlord', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Failed to apply for landlord';
+      return rejectWithValue(message);
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: 'auth',
@@ -346,6 +362,20 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to update role';
       });
+
+    builder
+      .addCase(applyForLandlord.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(applyForLandlord.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(applyForLandlord.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to apply for landlord';
+      });
+
   },
 });
 
