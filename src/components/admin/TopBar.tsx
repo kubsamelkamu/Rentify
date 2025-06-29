@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import Image from 'next/image';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { logout } from '@/store/slices/authSlice';
+import { useAppSelector } from '@/store/hooks';
 import Link from 'next/link';
 
 
@@ -12,16 +10,10 @@ interface TopbarProps {
 
 const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
 
-  const dispatch = useAppDispatch();
-  const router = useRouter();
+  
   const { user } = useAppSelector((state) => state.auth)!;
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    router.push('/auth/login');
-  };
 
   const initial = user?.name?.charAt(0).toUpperCase() ?? '';
 
@@ -96,29 +88,6 @@ const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
                 </div>
               )}
             </button>
-            <div
-              className={`
-                absolute right-0 mt-2 w-40 rounded-lg shadow-xl
-                bg-white border border-gray-200
-                transition-all duration-150
-                ${menuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
-                z-50
-              `}
-            >
-              <Link
-                href="/admin/profile"
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                onClick={() => setMenuOpen(false)}
-              >
-                Your Profile
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Logout
-              </button>
-            </div>
           </div>
         ) : (
           <Link
