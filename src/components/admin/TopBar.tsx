@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import Image from 'next/image';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { logout } from '@/store/slices/authSlice';
+import { useAppSelector } from '@/store/hooks';
 import Link from 'next/link';
 
 
@@ -12,8 +10,7 @@ interface TopbarProps {
 
 const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
 
-  const dispatch = useAppDispatch();
-  const router = useRouter();
+  
   const { user } = useAppSelector((state) => state.auth)!;
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
