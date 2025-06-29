@@ -18,11 +18,6 @@ const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    router.push('/auth/login');
-  };
-
   const initial = user?.name?.charAt(0).toUpperCase() ?? '';
 
   useEffect(() => {
