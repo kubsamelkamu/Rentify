@@ -96,29 +96,6 @@ const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar }) => {
                 </div>
               )}
             </button>
-            <div
-              className={`
-                absolute right-0 mt-2 w-40 rounded-lg shadow-xl
-                bg-white border border-gray-200
-                transition-all duration-150
-                ${menuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
-                z-50
-              `}
-            >
-              <Link
-                href="/admin/profile"
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                onClick={() => setMenuOpen(false)}
-              >
-                Your Profile
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Logout
-              </button>
-            </div>
           </div>
         ) : (
           <Link
