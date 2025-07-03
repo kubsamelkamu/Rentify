@@ -27,7 +27,7 @@ A **Next.js**, **TypeScript**, and **Redux Toolkit**–based frontend applicatio
    Offline support, installable app, and push notifications.
 
 ## 📂 Project Structure
-
+```
 Rentify_client/
 ├── .env.local
 ├── .eslintrc.json
@@ -85,6 +85,7 @@ Rentify_client/
 │   ├── utils/
 │   └── styles/
 ├── types/
+```
 
 
 ## 🌐 Demo
