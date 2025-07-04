@@ -1,6 +1,6 @@
 {
   "name": "Rentify",
-  "short_name": "RentHouse",
+  "short_name": "Rentify",
   "description": "Find and book rental homes seamlessly.",
   "start_url": "/?utm_source=web_app",
   "scope": "/",
