@@ -77,7 +77,7 @@ Rentify_client/
 │   │   ├── contact.tsx
 │   │   ├── landlord/
 │   │   ├── properties/
-│   │   └── ...
+│   │  
 │   ├── store/
 │   │   ├── hooks.ts
 │   │   ├── slices/
@@ -91,7 +91,7 @@ Rentify_client/
 ## 🌐 Demo
 
 🚀 Experience the live version of Rentify here:  
-👉 [https://hrp-client.vercel.app](https://rentify-two-lilac.vercel.app/)
+👉 [Rentify](https://rentify-two-lilac.vercel.app/)
 
 
 ## 🛠️ Tech Stack
@@ -104,7 +104,8 @@ The Rentify Client is built with the following technologies:
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) — utility-first CSS framework.
 - **Real-time Communication**: [Socket.IO Client](https://socket.io/) — for real-time chat between a Landlord and Tenants ,  booking updates, payment status and like.
 - **PWA Support**: Service workers and Web App Manifest for offline access and installability.
-- **Form Validation & UI**: React Hook Form, Lucide Icons,axios, react-hot-toast, cloudinary and Framer Motio
+- **Form Validation & UI**: React Hook Form, Lucide Icons and Framer Motion.
+-**HTTP & Notifications**: Axios, react-hot-toast, Cloudinary SDK.
 
 ## 📦 Prerequisites
 
@@ -122,29 +123,98 @@ Follow these steps to set up and run the Rentify Client locally:
 1. **Clone the repository**
    ```bash
    git clone https://github.com/kubsamelkamu/Rentify.git
+   ```
 2. **Navigate into the project directory**
+   ```bash
     cd Rentify
+    ```
 3.**Install Project Dependencies**
-   ``` bash 
+   ```bash 
     npm install
     # or
     yarn install
     # or
     pnpm install
-    
-
-4.  ** Create and configure environment variables**
+    ```
+4. ** Create and configure environment variables**
 
 Create a `.env.local` file in the project root directory and add the following variables:
 
 ```ini
 NEXT_PUBLIC_API_URL=http://localhost:5000
 NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
+```
 
-5. **Run the development server**
+## 📜 Available Scripts
 
-Start the Next.js development server with the following command:
+In the project directory, you can run:
+
+### `npm run dev`
+Starts the development server at [http://localhost:3000](http://localhost:3000).
 
 ```bash
 npm run dev
+```
+## `npm run build`
+Builds the application for production to the .next/ folder.
+## `npm start`
+Runs the compiled production build.
+## `npm run lint`
+Checks the code for linting errors using ESLint.
+## `npm run type-check`
+Runs TypeScript type checking 
+## `npm run test`
+Runs the test suite 
 
+## 🤝 Contributing
+
+To contribute to the Rentify Client project, please follow these steps:
+
+1. **Fork** the repository  
+   Click the “Fork” button in the top-right corner of the GitHub page.
+
+2. **Clone** your fork locally  
+   ```bash
+   git clone https://github.com/kubsamelkamu/Rentify.git
+   cd Rentify
+   ```
+3.Create a feature branch
+   ``` bash 
+   git checkout -b feature/my-new-feature
+   ```
+4.Install dependencies and run the project
+   ``` bash
+   npm install
+   npm run dev
+   ```
+5.Implement your changes
+   Follow existing coding style and conventions.
+
+   Add tests for new functionality.
+
+   Ensure ESLint and type-check pass locally:
+   ```bash
+      npm run lint
+      npm run type-check
+   ```
+6.Commit your changes
+   ```bash 
+   git add .
+   git commit -m "feat: describe your feature here"
+   ```
+7.Push to your fork
+   ```bash
+      git push origin feature/my-new-feature
+   ```
+8.Open a Pull Request
+   Go to the original Rentify Client repository.
+
+   Click “New Pull Request” and select your branch.
+
+   Provide a clear title and description.
+9.Review process
+   Respond to review comments.
+
+   Make any requested changes.
+
+   Once approved, your PR will be merged.
