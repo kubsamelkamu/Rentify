@@ -105,7 +105,7 @@ The Rentify Client is built with the following technologies:
 - **Real-time Communication**: [Socket.IO Client](https://socket.io/) — for real-time chat between a Landlord and Tenants ,  booking updates, payment status and like.
 - **PWA Support**: Service workers and Web App Manifest for offline access and installability.
 - **Form Validation & UI**: React Hook Form, Lucide Icons and Framer Motion.
-- **HTTP & Notifications**: Axios, react-hot-toast, Cloudinary SDK.
+-**HTTP & Notifications**: Axios, react-hot-toast, Cloudinary SDK.
 
 ## 📦 Prerequisites
 
