@@ -1,7 +1,10 @@
-import nextPWA from 'next-pwa';
+import nextPWA from 'next-pwa'
+import runtimeCaching from 'next-pwa/cache.js'
+
+const isProd = process.env.NODE_ENV === 'production'
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const baseConfig = {
   reactStrictMode: true,
   images: {
     loader: 'custom',
@@ -14,16 +17,20 @@ const nextConfig = {
       },
     ],
   },
-};
+}
 
-const isProd = process.env.NODE_ENV === 'production';
+const pwaConfig = {
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  runtimeCaching,
+  buildExcludes: [/middleware-manifest\.json$/],
+  fallbacks: {
+    document: '/offline.html',
+    image: "/cloud-solid.svg"
+  },
+}
 
-const config = isProd
-  ? nextPWA({
-      dest: 'public',
-      register: true,
-      skipWaiting: true,
-    })(nextConfig)
-  : nextConfig;
-
-export default config;
+export default isProd
+  ? nextPWA(pwaConfig)(baseConfig)
+  : baseConfig
