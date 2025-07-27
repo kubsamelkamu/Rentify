@@ -2,7 +2,7 @@ import { NextPage } from 'next';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import api from '@/utils/api';
-import {fetchUsers,changeUserRole,deleteUser,User as AdminUser,} from '@/store/slices/adminSlice';
+import { fetchUsers, deleteUser, User as AdminUser } from '@/store/slices/adminSlice';
 import toast from 'react-hot-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Head from 'next/head';
@@ -13,200 +13,140 @@ import { Loader } from 'lucide-react';
 const AdminUsersPage: NextPage = () => {
 
   const dispatch = useAppDispatch();
-  const { users, loading, error, usersPage, usersTotalPages } = useAppSelector(
-    (state) => state.admin
-  );
-
-  const [page, setPage] = useState<number>(usersPage);
+  const { users, loading, error, } = useAppSelector((state) => state.admin);
+  const allFiltered = users.filter(u => u.role === 'TENANT' || u.role === 'LANDLORD');
   const [search, setSearch] = useState('');
   const [exporting, setExporting] = useState(false);
-  const [changingRoleIds, setChangingRoleIds] = useState<Record<string, boolean>>({});
   const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({});
-
   const limit = 5;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(allFiltered.length / limit);
+  const pageData = allFiltered.slice((page - 1) * limit, page * limit);
 
   useEffect(() => {
     const token = localStorage.getItem('token') || '';
     connectSocket(token);
-
-    const handleNewUser = (newUser: AdminUser) => {
+    const handleNew = (newUser: AdminUser) => {
       toast(`New user joined: ${newUser.name}`, { icon: '👤' });
     };
-
-    socket.on('admin:newUser', handleNewUser);
-    return () => {
-      socket.off('admin:newUser', handleNewUser);
-    };
+    socket.on('admin:newUser', handleNew);
+    return () => { socket.off('admin:newUser', handleNew); };
   }, []);
 
   useEffect(() => {
-    dispatch(fetchUsers({ page, limit, search }));
-  }, [dispatch, page, search]);
+    dispatch(fetchUsers({ page: 1, limit: 1000, search }));
+  }, [dispatch, search]);
 
   const debouncedSearch = debounce((...args: unknown[]) => {
-    const value = args[0] as string;
+    const val = String(args[0] || '');
     setPage(1);
-    setSearch(value);
+    setSearch(val);
   }, 500);
 
   const handleExport = async () => {
     setExporting(true);
     try {
-      const response = await api.get('api/admin/users/export', {
-        responseType: 'blob',
-      });
-      const blob = new Blob([response.data], { type: response.headers['content-type'] });
-      const url = window.URL.createObjectURL(blob);
+      const res = await api.get('api/admin/users/export', { responseType: 'blob' });
+      const blob = new Blob([res.data], { type: res.headers['content-type'] });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = 'rentify-users.xlsx';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-
-      toast.success('Users exported successfully');
+      a.href = url; a.download = 'rentify-users.xlsx';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      toast.success('Exported!');
     } catch {
-      toast.error('Failed to export users: ');
+      toast.error('Export failed');
     } finally {
       setExporting(false);
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: AdminUser['role']) => {
-    setChangingRoleIds((m) => ({ ...m, [userId]: true }));
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this user?')) return;
+    setDeletingIds(m => ({ ...m, [id]: true }));
     try {
-      await dispatch(changeUserRole({ userId, role: newRole })).unwrap();
-      toast.success('User role updated');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error('Could not change role: ' + msg);
+      await dispatch(deleteUser(id)).unwrap();
+      toast.success('Deleted');
+    } catch{
+      toast.error('Delete failed: ');
     } finally {
-      setChangingRoleIds((m) => {
-        const next = { ...m };
-        delete next[userId];
-        return next;
-      });
+      setDeletingIds(m => { const next = { ...m }; delete next[id]; return next; });
     }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    setDeletingIds((m) => ({ ...m, [userId]: true }));
-    try {
-      await dispatch(deleteUser(userId)).unwrap();
-      toast.success('User deleted');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error('Could not delete user: ' + msg);
-    } finally {
-      setDeletingIds((m) => {
-        const next = { ...m };
-        delete next[userId];
-        return next;
-      });
-    }
-  };
-
-  const handlePrev = () => {
-    if (page > 1) setPage(page - 1);
-  };
-
-  const handleNext = () => {
-    if (page < usersTotalPages) setPage(page + 1);
   };
 
   return (
     <AdminLayout>
       <Head>
         <title>Rentify | Manage Users</title>
-        <meta
-          name="description"
-          content="Admin page to manage users for Rentify, including real-time updates."
-        />
       </Head>
-
       <div className="flex flex-col space-y-6 px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-blue-600 rounded-lg space-y-4 sm:space-y-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Manage Users</h1>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-blue-600 rounded-lg">
+          <h1 className="text-white text-2xl font-bold">Manage Users</h1>
+          <div className="flex gap-2 w-full sm:w-auto">
             <input
               type="text"
-              placeholder="Search by name or email..."
-              onChange={(e) => debouncedSearch(e.target.value)}
-              className="flex-grow px-3 py-2 rounded border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none w-full sm:w-64"
+              placeholder="Search name or email…"
+              className="flex-grow px-3 py-2 rounded border"
+              onChange={e => debouncedSearch(e.target.value)}
             />
-
             <button
               onClick={handleExport}
-              disabled={exporting || users.length === 0}
-              aria-busy={exporting}
-              className={`flex justify-center items-center px-4 py-2 rounded text-white transition w-full sm:w-auto ${
-                exporting || users.length === 0
+              disabled={exporting || allFiltered.length === 0}
+              className={`px-4 py-2 text-white rounded ${
+                exporting || allFiltered.length === 0
                   ? 'bg-green-400 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-700'
               }`}
             >
-              {exporting ? <Loader className="animate-spin mr-2 h-4 w-4" /> : null}
-              {exporting ? 'Exporting…' : 'Export Users'}
+              {exporting ? <Loader className="animate-spin mr-2 h-4 w-4" /> : 'Export'}
             </button>
           </div>
         </div>
 
-        {loading && (
+        {loading ? (
           <div className="flex justify-center py-10">
             <Loader className="animate-spin h-12 w-12 text-blue-600" />
           </div>
-        )}
-
-        {error && <p className="text-red-500">Error loading users: {error}</p>}
-        {!loading && !error && users.length === 0 && (
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : allFiltered.length === 0 ? (
           <p className="text-gray-600">No users found.</p>
-        )}
-
-        {!loading && !error && users.length > 0 && (
+        ) : (
           <>
             <div className="overflow-x-auto rounded-lg shadow-sm">
-              <table className="min-w-full divide-y divide-gray-200 bg-white text-gray-900">
+              <table className="min-w-full bg-white divide-y divide-gray-200">
                 <thead className="bg-blue-600 sticky top-0">
                   <tr>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Name</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white hidden md:table-cell">Email</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Role</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-white">Joined</th>
-                    <th className="px-4 py-2 text-center text-sm font-medium text-white">Actions</th>
+                    <th className="px-4 py-2 text-white text-left">Name</th>
+                    <th className="px-4 py-2 text-white text-left hidden md:table-cell">Email</th>
+                    <th className="px-4 py-2 text-white text-left">Role</th>
+                    <th className="px-4 py-2 text-white text-left">Joined</th>
+                    <th className="px-4 py-2 text-white text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {users.map((u) => (
+                  {pageData.map(u => (
                     <tr key={u.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{u.name}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm hidden md:table-cell">
-                        <a href={`mailto:${u.email}`} className="text-blue-600 hover:underline">{u.email}</a>
+                      <td className="px-4 py-3">{u.name}</td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <a href={`mailto:${u.email}`} className="text-blue-600">
+                          {u.email}
+                        </a>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm">
-                        <select
-                          value={u.role}
-                          onChange={(e) => handleRoleChange(u.id, e.target.value as AdminUser['role'])}
-                          disabled={changingRoleIds[u.id]}
-                          className="px-2 py-1 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                        >
-                          <option value="TENANT">Tenant</option>
-                          <option value="LANDLORD">Landlord</option>
-                          <option value="ADMIN">Admin</option>
-                        </select>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm">{new Date(u.createdAt).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-center text-sm space-x-1">
+                      <td className="px-4 py-3">{u.role}</td>
+                      <td className="px-4 py-3">{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-center">
                         <button
-                          onClick={() => handleDeleteUser(u.id)}
+                          onClick={() => handleDelete(u.id)}
                           disabled={deletingIds[u.id]}
-                          className={`px-3 py-1 rounded text-white font-medium transition focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                            deletingIds[u.id]
-                              ? 'bg-red-200 cursor-not-allowed'
-                              : 'bg-red-500 hover:bg-red-600'
+                          className={`px-3 py-1 text-white rounded ${
+                            deletingIds[u.id] ? 'bg-red-200' : 'bg-red-600 hover:bg-red-700'
                           }`}
-                        >{deletingIds[u.id] ? <Loader className="animate-spin h-4 w-4 mx-auto" /> : 'Delete'}</button>
+                        >
+                          {deletingIds[u.id]
+                            ? <Loader className="animate-spin h-4 w-4 mx-auto" />
+                            : 'Delete'}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -214,30 +154,24 @@ const AdminUsersPage: NextPage = () => {
               </table>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-blue-600 rounded-b-lg space-y-2 sm:space-y-0">
+            <div className="flex justify-between items-center px-4 py-3 bg-blue-600 rounded-b-lg">
               <button
-                onClick={handlePrev}
-                disabled={page <= 1}
-                className={`px-3 py-1 rounded text-white font-medium transition focus:outline-none focus:ring-2 focus:ring-white ${
-                  page <= 1
-                    ? 'bg-blue-400 cursor-not-allowed'
-                    : 'bg-blue-800 hover:bg-blue-700'
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className={`px-3 py-1 text-white rounded ${
+                  page === 1 ? 'bg-blue-400' : 'bg-blue-800 hover:bg-blue-700'
                 }`}
               >
                 Previous
               </button>
-
-              <span className="text-white text-sm">
-                Page {page} of {usersTotalPages}
+              <span className="text-white">
+                Page {page} of {totalPages}
               </span>
-
               <button
-                onClick={handleNext}
-                disabled={page >= usersTotalPages}
-                className={`px-3 py-1 rounded text-white font-medium transition focus:outline-none focus:ring-2 focus:ring-white ${
-                  page >= usersTotalPages
-                    ? 'bg-blue-400 cursor-not-allowed'
-                    : 'bg-blue-800 hover:bg-blue-700'
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className={`px-3 py-1 text-white rounded ${
+                  page === totalPages ? 'bg-blue-400' : 'bg-blue-800 hover:bg-blue-700'
                 }`}
               >
                 Next
@@ -251,3 +185,6 @@ const AdminUsersPage: NextPage = () => {
 };
 
 export default AdminUsersPage;
+
+
+

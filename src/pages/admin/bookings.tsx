@@ -1,11 +1,7 @@
 import { NextPage } from 'next';
 import { useEffect, useState, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  fetchBookings,
-  updateBookingStatus,
-  Booking,
-} from '@/store/slices/adminSlice';
+import {fetchBookings,updateBookingStatus,Booking,} from '@/store/slices/adminSlice';
 import toast from 'react-hot-toast';
 import Head from 'next/head';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -14,15 +10,9 @@ import socket, { connectSocket } from '@/utils/socket';
 const PAGE_SIZE = 5;
 
 const AdminBookingsPage: NextPage = () => {
-  const dispatch = useAppDispatch();
-  const {
-    bookings,
-    bookingsPage,
-    bookingsTotalPages,
-    loading,
-    error,
-  } = useAppSelector((state) => state.admin)!;
 
+  const dispatch = useAppDispatch();
+  const {bookings,bookingsPage,bookingsTotalPages,loading,error,} = useAppSelector((state) => state.admin)!;
   const [page, setPage] = useState(bookingsPage);
   const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAppDispatch } from '@/store/hooks';
 import { logout } from '@/store/slices/authSlice';
-import {LayoutDashboard,Users,Home,CalendarCheck,Star,Settings,} from 'lucide-react';
+import {LayoutDashboard,Users,Home,CalendarCheck,Star,Settings, ShieldCheck,} from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,10 +13,12 @@ interface SidebarProps {
 const mainLinks = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
+   { href: '/admin/super-admin', label: 'Super Admins', icon: ShieldCheck }, 
   { href: '/admin/landlord-requests', label: 'Landlord Requests', icon: Users },
   { href: '/admin/properties', label: 'Properties', icon: Home },
   { href: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
   { href: '/admin/reviews', label: 'Reviews', icon: Star },
+ 
 ];
 
 const settingsLink = { href: '/admin/settings', label: 'Settings', icon: Settings };

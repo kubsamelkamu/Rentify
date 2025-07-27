@@ -177,10 +177,8 @@ const PropertyDetailPage: React.FC = () => {
                   </div>
                   {isPropLandlord && (
                     <div className="flex space-x-2">
-                      <Link href={`/properties/${current.id}/edit`} passHref>
-                        <a className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
+                      <Link href={`/properties/${current.id}/edit`} passHref className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
                           Edit
-                        </a>
                       </Link>
                       <button
                         onClick={handleDelete}

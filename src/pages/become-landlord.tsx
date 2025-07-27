@@ -11,6 +11,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 const BecomeLandlordPage: NextPage = () => {
+  
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { theme } = useContext(ThemeContext)!;
