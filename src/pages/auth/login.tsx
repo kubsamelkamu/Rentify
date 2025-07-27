@@ -31,7 +31,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!user) return;
-    if (user.role === 'ADMIN') {
+    if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
       router.push('/admin');
     }else {
       const destination = redirect ? decodeURIComponent(redirect) : '/properties';

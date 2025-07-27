@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 import axios from 'axios';
 import api from '../../utils/api';
 
@@ -11,15 +11,6 @@ export interface Property {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   rejectionReason?: string | null;
   createdAt: string;
-}
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'TENANT' | 'LANDLORD' | 'ADMIN';
-  createdAt: string;      
-  profilePhoto?: string;  
 }
 
 
@@ -52,10 +43,19 @@ export interface Metrics {
   totalRevenue: number;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'TENANT' | 'LANDLORD' | 'ADMIN' | 'SUPER_ADMIN';
+  createdAt: string;
+  profilePhoto?: string;
+}
+
+export interface UsersPaginationMeta { totalUsers: number; page: number; limit: number; totalPages: number; }
 export interface PropertiesPaginationMeta { totalProperties: number; page: number; limit: number; totalPages: number; }
-export interface UsersPaginationMeta      { totalUsers: number;      page: number; limit: number; totalPages: number; }
-export interface BookingsPaginationMeta   { totalBookings: number;   page: number; limit: number; totalPages: number; }
-export interface ReviewsPaginationMeta    { totalReviews: number;    page: number; limit: number; totalPages: number; }
+export interface BookingsPaginationMeta { totalBookings: number; page: number; limit: number; totalPages: number; }
+export interface ReviewsPaginationMeta { totalReviews: number; page: number; limit: number; totalPages: number; }
 
 interface AdminState {
   users: User[];
@@ -83,6 +83,13 @@ interface AdminState {
   reviewsTotalPages: number;
 
   metrics: Metrics | null;
+
+  admins: User[];
+  saPage: number;
+  saLimit: number;
+  saTotal: number;
+  saTotalPages: number;
+
   loading: boolean;
   error: string | null;
 }
@@ -93,6 +100,7 @@ const initialState: AdminState = {
   bookings: [], bookingsPage: 1, bookingsLimit: 10, bookingsTotal: 0, bookingsTotalPages: 1,
   reviews: [], reviewsPage: 1, reviewsLimit: 10, reviewsTotal: 0, reviewsTotalPages: 1,
   metrics: null,
+  admins: [], saPage: 1, saLimit: 10, saTotal: 0, saTotalPages: 1,
   loading: false,
   error: null,
 };
@@ -334,110 +342,212 @@ export const fetchMetrics = createAsyncThunk<
   }
 });
 
+export const fetchAdmins = createAsyncThunk<
+  { data: User[]; meta: UsersPaginationMeta },
+  { page: number; limit: number },
+  { rejectValue: string }
+>(
+  'admin/fetchSuperAdmins',
+  async ({ page, limit }, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await api.get(
+        `api/super-admin/admins?page=${page}&limit=${limit}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return data;
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Failed to load admins';
+      return rejectWithValue(msg);
+    }
+  }
+);
+
+export const createAdmin = createAsyncThunk<
+  { user: User; token: string },
+  { email: string; name: string; password: string },
+  { rejectValue: string }
+>(
+  'admin/createAdmin',
+  async (payload, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await api.post(
+        `api/super-admin/admins`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return data;
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Failed to create admin';
+      return rejectWithValue(msg);
+    }
+  }
+);
+
+export const deleteAdmin = createAsyncThunk<
+  string,
+  string,
+  { rejectValue: string }
+>(
+  'admin/deleteAdmin',
+  async (id, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      await api.delete(
+        `api/super-admin/admins/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return id;
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Failed to delete admin';
+      return rejectWithValue(msg);
+    }
+  }
+);
+
 const adminSlice = createSlice({
   name: 'admin',
   initialState,
   reducers: {
-    addProperty(state, action: PayloadAction<Property>) {
-      state.properties.unshift(action.payload);
-      state.propertiesTotal++;
-      state.propertiesTotalPages = Math.ceil(state.propertiesTotal / state.propertiesLimit);
-    },
-    updateProperty(state, action: PayloadAction<Property>) {
-      const idx = state.properties.findIndex(p => p.id === action.payload.id);
-      if (idx >= 0) state.properties[idx] = action.payload;
-    },
     clearAdminError(state) {
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchUsers.pending, (s) => { s.loading = true; s.error = null; })
-      .addCase(fetchUsers.fulfilled, (s, { payload }) => {
-        s.loading = false;
-        s.users = payload.data;
-        s.usersPage = payload.meta.page;
-        s.usersLimit = payload.meta.limit;
-        s.usersTotal = payload.meta.totalUsers;
-        s.usersTotalPages = payload.meta.totalPages;
+      .addCase(fetchUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(fetchUsers.rejected, (s, { payload }) => {
-        s.loading = false;
-        s.error = typeof payload === 'string' ? payload : 'Failed to load users';
+      .addCase(fetchUsers.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.users = payload.data;
+        state.usersPage = payload.meta.page;
+        state.usersLimit = payload.meta.limit;
+        state.usersTotal = payload.meta.totalUsers;
+        state.usersTotalPages = payload.meta.totalPages;
       })
+      .addCase(fetchUsers.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = typeof payload === 'string' ? payload : 'Failed to load';
+      });
     builder
-      .addCase(changeUserRole.pending, (s) => { s.loading = true; s.error = null; })
-      .addCase(changeUserRole.fulfilled, (s, { payload }) => {
-        s.loading = false;
-        const idx = s.users.findIndex(u => u.id === payload.user.id);
-        if (idx >= 0) s.users[idx] = payload.user;
+      .addCase(changeUserRole.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(changeUserRole.rejected, (s, { payload }) => {
-        s.loading = false;
-        s.error = payload || 'Failed to update role';
+      .addCase(changeUserRole.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        const idx = state.users.findIndex(u => u.id === payload.user.id);
+        if (idx >= 0) state.users[idx] = payload.user;
       })
+      .addCase(changeUserRole.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload ?? 'Failed to update role';
+      });
     builder
-      .addCase(deleteUser.pending, (s) => { s.loading = true; s.error = null; })
-      .addCase(deleteUser.fulfilled, (s, { payload }) => {
-        s.loading = false;
-        s.users = s.users.filter(u => u.id !== payload);
-        s.usersTotal--;
-        s.usersTotalPages = Math.ceil(s.usersTotal / s.usersLimit);
+      .addCase(deleteUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(deleteUser.rejected, (s, { payload }) => {
-        s.loading = false;
-        s.error = payload || 'Failed to delete user';
+      .addCase(deleteUser.fulfilled, (state, { payload: userId }) => {
+        state.loading = false;
+        state.users = state.users.filter(u => u.id !== userId);
+        state.usersTotal--;
+        state.usersTotalPages = Math.ceil(state.usersTotal / state.usersLimit);
       })
+      .addCase(deleteUser.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload ?? 'Failed to delete user';
+      });
+
+    // ─── fetchProperties ───
     builder
-      .addCase(fetchProperties.pending, (s) => { s.loading = true; s.error = null; })
-      .addCase(fetchProperties.fulfilled, (s, { payload }) => {
-        s.loading = false;
-        s.properties = payload.data;
-        s.propertiesPage = payload.meta.page;
-        s.propertiesLimit = payload.meta.limit;
-        s.propertiesTotal = payload.meta.totalProperties;
-        s.propertiesTotalPages = payload.meta.totalPages;
+      .addCase(fetchProperties.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(fetchProperties.rejected, (s, { payload }) => {
-        s.loading = false;
-        s.error = payload || 'Failed to load properties';
+      .addCase(fetchProperties.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.properties = payload.data;
+        state.propertiesPage = payload.meta.page;
+        state.propertiesLimit = payload.meta.limit;
+        state.propertiesTotal = payload.meta.totalProperties;
+        state.propertiesTotalPages = payload.meta.totalPages;
       })
+      .addCase(fetchProperties.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload ?? 'Failed to load properties';
+      });
+
+    // ─── approveProperty ───
     builder
-      .addCase(approveProperty.pending, (s) => { s.loading = true; s.error = null; })
-      .addCase(approveProperty.fulfilled, (s, { payload }) => {
-        s.loading = false;
-        const idx = s.properties.findIndex(p => p.id === payload.id);
-        if (idx >= 0) s.properties[idx] = payload;
+      .addCase(approveProperty.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(approveProperty.rejected, (s, { payload }) => {
-        s.loading = false;
-        s.error = payload || 'Failed to approve property';
+      .addCase(approveProperty.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        const idx = state.properties.findIndex(p => p.id === payload.id);
+        if (idx >= 0) state.properties[idx] = payload;
       })
+      .addCase(approveProperty.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload ?? 'Failed to approve property';
+      });
+
+    // ─── rejectProperty ───
     builder
-      .addCase(rejectProperty.pending, (s) => { s.loading = true; s.error = null; })
-      .addCase(rejectProperty.fulfilled, (s, { payload }) => {
-        s.loading = false;
-        const idx = s.properties.findIndex(p => p.id === payload.id);
-        if (idx >= 0) s.properties[idx] = payload;
+      .addCase(rejectProperty.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(rejectProperty.rejected, (s, { payload }) => {
-        s.loading = false;
-        s.error = payload || 'Failed to reject property';
+      .addCase(rejectProperty.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        const idx = state.properties.findIndex(p => p.id === payload.id);
+        if (idx >= 0) state.properties[idx] = payload;
       })
+      .addCase(rejectProperty.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload ?? 'Failed to reject property';
+      });
+
+    // ─── deletePropertyByAdmin ───
     builder
-      .addCase(deletePropertyByAdmin.pending, (s) => { s.loading = true; s.error = null; })
-      .addCase(deletePropertyByAdmin.fulfilled, (s, { payload }) => {
-        s.loading = false;
-        s.properties = s.properties.filter(p => p.id !== payload);
-        s.propertiesTotal--;
-        s.propertiesTotalPages = Math.ceil(s.propertiesTotal / s.propertiesLimit);
+      .addCase(deletePropertyByAdmin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(deletePropertyByAdmin.rejected, (s, { payload }) => {
-        s.loading = false;
-        s.error = payload || 'Failed to delete property';
+      .addCase(deletePropertyByAdmin.fulfilled, (state, { payload: propertyId }) => {
+        state.loading = false;
+        state.properties = state.properties.filter(p => p.id !== propertyId);
+        state.propertiesTotal--;
+        state.propertiesTotalPages = Math.ceil(state.propertiesTotal / state.propertiesLimit);
       })
-      .addCase(fetchBookings.pending, state => { state.loading = true; state.error = null; })
+      .addCase(deletePropertyByAdmin.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload ?? 'Failed to delete property';
+      });
+
+    // ─── fetchBookings ───
+    builder
+      .addCase(fetchBookings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchBookings.fulfilled, (state, { payload }) => {
         state.loading = false;
         state.bookings = payload.data;
@@ -448,10 +558,15 @@ const adminSlice = createSlice({
       })
       .addCase(fetchBookings.rejected, (state, { payload }) => {
         state.loading = false;
-        state.error = payload || 'Failed to load bookings';
-      })
+        state.error = payload ?? 'Failed to load bookings';
+      });
 
-      .addCase(updateBookingStatus.pending, state => { state.loading = true; state.error = null; })
+    // ─── updateBookingStatus ───
+    builder
+      .addCase(updateBookingStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(updateBookingStatus.fulfilled, (state, { payload }) => {
         state.loading = false;
         const idx = state.bookings.findIndex(b => b.id === payload.id);
@@ -459,9 +574,15 @@ const adminSlice = createSlice({
       })
       .addCase(updateBookingStatus.rejected, (state, { payload }) => {
         state.loading = false;
-        state.error = payload || 'Failed to update booking';
+        state.error = payload ?? 'Failed to update booking status';
+      });
+
+    // ─── fetchReviews ───
+    builder
+      .addCase(fetchReviews.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(fetchReviews.pending, state => { state.loading = true; state.error = null; })
       .addCase(fetchReviews.fulfilled, (state, { payload }) => {
         state.loading = false;
         state.reviews = payload.data;
@@ -472,32 +593,94 @@ const adminSlice = createSlice({
       })
       .addCase(fetchReviews.rejected, (state, { payload }) => {
         state.loading = false;
-        state.error = payload || 'Failed to load reviews';
+        state.error = payload ?? 'Failed to load reviews';
+      });
+
+    // ─── deleteReview ───
+    builder
+      .addCase(deleteReview.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(deleteReview.pending, state => { state.loading = true; state.error = null; })
-      .addCase(deleteReview.fulfilled, (state, { payload }) => {
+      .addCase(deleteReview.fulfilled, (state, { payload: reviewId }) => {
         state.loading = false;
-        state.reviews = state.reviews.filter(r => r.id !== payload);
+        state.reviews = state.reviews.filter(r => r.id !== reviewId);
         state.reviewsTotal--;
         state.reviewsTotalPages = Math.ceil(state.reviewsTotal / state.reviewsLimit);
       })
       .addCase(deleteReview.rejected, (state, { payload }) => {
         state.loading = false;
-        state.error = payload || 'Failed to delete review';
+        state.error = payload ?? 'Failed to delete review';
+      });
+
+    // ─── fetchMetrics ───
+    builder
+      .addCase(fetchMetrics.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(fetchMetrics.pending, state => { state.loading = true; state.error = null; })
       .addCase(fetchMetrics.fulfilled, (state, { payload }) => {
         state.loading = false;
         state.metrics = payload;
       })
       .addCase(fetchMetrics.rejected, (state, { payload }) => {
         state.loading = false;
-        state.error = payload || 'Failed to load metrics';
+        state.error = payload ?? 'Failed to load metrics';
+      });
+
+    // ─── fetchSuperAdmins ───
+    builder
+      .addCase(fetchAdmins.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdmins.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.admins = payload.data;
+        state.saPage = payload.meta.page;
+        state.saLimit = payload.meta.limit;
+        state.saTotal = payload.meta.totalUsers;
+        state.saTotalPages = payload.meta.totalPages;
+      })
+      .addCase(fetchAdmins.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload ?? 'Failed to load admins';
+      });
+
+    // ─── createAdmin ───
+    builder
+      .addCase(createAdmin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createAdmin.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.admins.unshift(payload.user);
+        state.saTotal++;
+        state.saTotalPages = Math.ceil(state.saTotal / state.saLimit);
+      })
+      .addCase(createAdmin.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload ?? 'Failed to create admin';
+      });
+
+    // ─── deleteAdmin ───
+    builder
+      .addCase(deleteAdmin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteAdmin.fulfilled, (state, { payload: id }) => {
+        state.loading = false;
+        state.admins = state.admins.filter(a => a.id !== id);
+        state.saTotal--;
+        state.saTotalPages = Math.ceil(state.saTotal / state.saLimit);
+      })
+      .addCase(deleteAdmin.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload ?? 'Failed to delete admin';
       });
   }
 });
-
-export const { addProperty, updateProperty, clearAdminError } = adminSlice.actions;
+export const { clearAdminError } = adminSlice.actions;
 export default adminSlice.reducer;
-
-

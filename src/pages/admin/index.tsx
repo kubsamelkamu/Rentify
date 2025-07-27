@@ -13,10 +13,14 @@ const AdminDashboardPage: NextPage = () => {
 
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((s) => s.auth)!;
-  const { metrics, loading, error } = useAppSelector((s) => s.admin)!;
+  const { metrics, loading, error } = useAppSelector((s) => s.admin);
 
   useEffect(() => {
-    if (user?.role !== 'ADMIN') return;
+    if (user?.role !== 'ADMIN'){
+      if (user?.role !== 'SUPER_ADMIN') {
+        return;
+      }
+    };
     dispatch(fetchMetrics());
     const token = localStorage.getItem('token') || '';
     connectSocket(token);

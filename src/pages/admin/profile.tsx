@@ -3,16 +3,13 @@ import { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import {
-  fetchCurrentProfile,
-  saveProfile,
-  clearError,
-} from "@/store/slices/authSlice";
+import {fetchCurrentProfile,saveProfile,clearError,} from "@/store/slices/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import toast from "react-hot-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 const ProfilePage: NextPage = () => {
+
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { user, status: fetchStatus, error: fetchError } = useAppSelector(
@@ -26,7 +23,6 @@ const ProfilePage: NextPage = () => {
   const [saving, setSaving] = useState(false);
   const [nameError, setNameError] = useState("");
 
-  // Redirect if not logged in
   useEffect(() => {
     if (user === null) {
       router.replace(
@@ -41,7 +37,6 @@ const ProfilePage: NextPage = () => {
     dispatch(fetchCurrentProfile());
   }, [dispatch]);
 
-  // Populate form when user data arrives
   useEffect(() => {
     if (user) {
       setName(user.name);

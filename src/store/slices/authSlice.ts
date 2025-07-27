@@ -3,7 +3,7 @@ import axios from 'axios';
 import api from '@/utils/api';
 import { changeUserRole } from './adminSlice';
 
-type Role = 'TENANT' | 'LANDLORD' | 'ADMIN';
+type Role = 'TENANT' | 'LANDLORD' | 'ADMIN' | 'SUPER_ADMIN';
 
 export interface User {
   id: string;
