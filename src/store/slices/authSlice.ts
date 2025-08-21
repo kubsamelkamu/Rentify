@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import api from '@/utils/api';
-
+import { changeUserRole } from './adminSlice';
 type Role = 'TENANT' | 'LANDLORD' | 'ADMIN' | 'SUPER_ADMIN';
 
 export interface User {
@@ -195,6 +195,26 @@ export const applyForLandlord = createAsyncThunk<
   }
 );
 
+export const resetPassword = createAsyncThunk<
+  void,
+  { token: string; newPassword: string },
+  { rejectValue: string }
+>(
+  'auth/resetPassword',
+  async (data, { rejectWithValue }) => {
+    try {
+      await api.post('/api/auth/reset-password', data);
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Password reset failed';
+      return rejectWithValue(message);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -270,6 +290,18 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to send reset email';
       });
+          builder
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Password reset failed';
+      });
         // fetchCurrentProfile
     builder
       .addCase(fetchCurrentProfile.pending, (state) => {
@@ -288,7 +320,24 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to load profile';
       });
-
+          // changeUserRole — update both user & token immediately
+    builder
+      .addCase(changeUserRole.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changeUserRole.fulfilled, (state, action) => {
+        const { user: updatedUser, token: updatedToken } = action.payload;
+        state.token = updatedToken;
+        localStorage.setItem('token', updatedToken);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(changeUserRole.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update role';
+      });
     // saveProfile
     builder
       .addCase(saveProfile.pending, (state) => {
