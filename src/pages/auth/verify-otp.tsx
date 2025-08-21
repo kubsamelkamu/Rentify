@@ -101,24 +101,20 @@ export default function VerifyOtpPage() {
           }));
           router.replace('/properties');
         } else {
-          // If backend doesn't return user data, try to log in again
           try {
-            // You might need to get password from somewhere or implement a different flow
-            // For now, redirect to login with a message
             router.push({
               pathname: '/auth/login',
               query: { message: 'Account verified. Please log in again.' }
             });
-          } catch (loginError) {
+          } catch{
             setError('Verification successful but automatic login failed. Please log in manually.');
           }
         }
       } else {
         setError(resultAction.payload || 'OTP verification failed');
       }
-    } catch (err: any) {
-      setError(err?.message || 'OTP verification failed');
-      console.log('OTP error:', err);
+    } catch  {
+      setError('OTP verification failed');
     } finally {
       setLoading(false);
     }
@@ -135,8 +131,8 @@ export default function VerifyOtpPage() {
       setResendCountdown(30);
       setOtp(new Array(6).fill(''));
       inputRefs.current[0]?.focus();
-    } catch (err: any) {
-      setError(err?.message || 'Failed to resend OTP');
+    } catch  {
+      setError('Failed to resend OTP');
     } finally {
       setResendLoading(false);
     }
@@ -148,7 +144,6 @@ export default function VerifyOtpPage() {
         <title>Verify OTP | Rentify</title>
         <meta name="description" content="Verify your OTP to access your Rentify account" />
       </Head>
-
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-100 p-4">
         <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
           <div className="flex justify-between items-center mb-6">

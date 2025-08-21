@@ -13,7 +13,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { redirect } = router.query as { redirect?: string };
   const { error: apiError, user } = useAppSelector((state) => state.auth);
-
   const [email, setEmailInput] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -72,7 +71,7 @@ export default function LoginPage() {
           setFormError(resultAction.payload || 'Login failed. Please try again.');
         }
       }
-    } catch (err: unknown) {
+    } catch{
       if (isMountedRef.current) setFormError('Login failed. Please try again.');
     } finally {
       if (isMountedRef.current) setIsProcessing(false);
@@ -158,9 +157,12 @@ export default function LoginPage() {
                   Forgot your password?
                 </Link>
               </p>
-              <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
-                <Link href="/auth/register" className="text-purple-600 hover:underline font-medium">
+              <p className="text-sm text-gray-600 text-center">
+                 Don not have an account?
+                <Link
+                  href="/auth/register"
+                  className="text-purple-600 hover:underline font-medium"
+                >
                   Sign up
                 </Link>
               </p>
