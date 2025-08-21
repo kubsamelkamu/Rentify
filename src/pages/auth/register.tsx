@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { User, Mail, Lock, Eye, EyeOff, Loader } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { registerUser } from '@/store/slices/authSlice';
+import { registerUser, setEmail, clearError } from '@/store/slices/authSlice';
 
 interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   id: string;
@@ -50,7 +50,6 @@ const InputField = ({ id, label, icon: Icon, type, ...props }: InputFieldProps) 
 };
 
 export default function RegisterPage() {
-
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { error: apiError } = useAppSelector((state) => state.auth);
@@ -67,7 +66,7 @@ export default function RegisterPage() {
   const { name, email, password, confirmPassword } = formData;
 
   useEffect(() => {
-    dispatch({ type: 'auth/clearError' });
+    dispatch(clearError());
   }, [dispatch]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -92,14 +91,14 @@ export default function RegisterPage() {
 
     setIsProcessing(true);
     try {
-      const startTime = Date.now();
       const result = await dispatch(registerUser({ name, email, password }));
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, 5000 - elapsed);
-      await new Promise((resolve) => setTimeout(resolve, remaining));
 
       if (registerUser.fulfilled.match(result)) {
-        router.push('/auth/verify-email-info');
+        // ✅ Save email in Redux so verify-otp can access it
+        dispatch(setEmail(email));
+
+        // ✅ Redirect without query params
+        router.push('/auth/verify-otp');
       }
     } catch (err: unknown) {
       if (err instanceof Error) setFormError(err.message);
@@ -119,7 +118,10 @@ export default function RegisterPage() {
     <>
       <Head>
         <title>Register | Rentify</title>
-        <meta name="description" content="Create an account on Rentify to find or list properties." />
+        <meta
+          name="description"
+          content="Create an account on Rentify to find or list properties."
+        />
       </Head>
       <div className="min-h-screen flex flex-col lg:flex-row">
         <div className="hidden lg:block lg:w-1/2 relative">
@@ -188,7 +190,10 @@ export default function RegisterPage() {
                 />
                 <label htmlFor="agree-checkbox" className="ml-2 text-sm text-gray-600">
                   I agree to the{' '}
-                  <Link href="/terms&conditions" className="font-medium text-purple-600 underline">
+                  <Link
+                    href="/terms&conditions"
+                    className="font-medium text-purple-600 underline"
+                  >
                     Terms & Conditions
                   </Link>
                 </label>
@@ -214,7 +219,10 @@ export default function RegisterPage() {
 
               <p className="text-sm text-gray-600 text-center">
                 Already have an account?{' '}
-                <Link href="/auth/login" className="text-purple-600 hover:underline font-medium">
+                <Link
+                  href="/auth/login"
+                  className="text-purple-600 hover:underline font-medium"
+                >
                   Login
                 </Link>
               </p>

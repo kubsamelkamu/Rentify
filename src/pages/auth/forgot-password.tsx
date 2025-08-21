@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { forgotPassword, clearError } from '@/store/slices/authSlice';
 
 export default function ForgotPasswordPage() {
+    
   const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector((state) => state.auth);
   const [email, setEmail] = useState<string>('');
