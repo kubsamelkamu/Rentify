@@ -4,17 +4,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { loginUser, clearError } from '@/store/slices/authSlice';
+import { loginUser, clearError, setEmail } from '@/store/slices/authSlice';
 import { Mail, Lock, Eye, EyeOff, Loader } from 'lucide-react';
 
 export default function LoginPage() {
 
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { error: apiError, user } = useAppSelector((state) => state.auth);
   const { redirect } = router.query as { redirect?: string };
+  const { error: apiError, user } = useAppSelector((state) => state.auth);
 
-  const [email, setEmail] = useState('');
+  const [email, setEmailInput] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
@@ -23,7 +23,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     dispatch(clearError());
-    
     return () => {
       isMountedRef.current = false;
     };
@@ -31,54 +30,52 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!user) return;
-    if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
-      router.push('/admin');
-    }else {
-      const destination = redirect ? decodeURIComponent(redirect) : '/properties';
-      router.push(destination);
-    }
-  }, [user, redirect, router]);
-
-  const getLoginErrorMessage = (error: string) => {
-    if (error.includes('401') || error.includes('Unauthorized')) {
-      return 'Invalid email or password. Please try again.';
-    } else if (error.includes('400')) {
-      return 'Account not verified. Please check your email.';
-    } else if (error.includes('Network Error')) {
-      return 'Network error. Please check your internet connection.';
-    } else if (error.includes('500')) {
-      return 'Server error. Please try again later.';
+     if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+      router.replace('/admin');}
+    else if (!user.isVerified) {
+      router.replace({
+        pathname: '/auth/verify-otp',
+        query: { email: user.email },
+      });
+      dispatch(setEmail(user.email));
     } else {
-      return 'Login failed. Please try again.';
+      const destination = redirect ? decodeURIComponent(redirect) : '/properties';
+      router.replace(destination);
     }
-  };
+  }, [user, redirect, router, dispatch]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
     dispatch(clearError());
-    
+
     if (!email || !password) {
       setFormError('Please enter both email and password.');
       return;
     }
 
     setIsProcessing(true);
-    
+
     try {
-      await dispatch(loginUser({ email, password })).unwrap();
-    } catch (err: unknown) {
-      if (isMountedRef.current) {
-        if (err instanceof Error) {
-          setFormError(getLoginErrorMessage(err.message));
+      const resultAction = await dispatch(loginUser({ email, password }));
+      console.log('---DEBUG LOGIN---');
+      console.log('Dispatch result:', resultAction);
+
+      if (loginUser.rejected.match(resultAction)) {
+        if (resultAction.payload === 'Please verify your email before logging in.') {
+          router.replace({
+            pathname: '/auth/verify-otp',
+            query: { email },
+          });
+          dispatch(setEmail(email));
         } else {
-          setFormError('login Failed. Please try again.');
+          setFormError(resultAction.payload || 'Login failed. Please try again.');
         }
       }
+    } catch (err: unknown) {
+      if (isMountedRef.current) setFormError('Login failed. Please try again.');
     } finally {
-      if (isMountedRef.current) {
-        setIsProcessing(false);
-      }
+      if (isMountedRef.current) setIsProcessing(false);
     }
   };
 
@@ -86,18 +83,10 @@ export default function LoginPage() {
     <>
       <Head>
         <title>Login | Rentify</title>
-        <meta name="description" content="Login to your Rentify account to manage your rentals." />
       </Head>
       <div className="min-h-screen flex flex-col lg:flex-row">
         <div className="hidden lg:block lg:w-1/2 relative">
-          <Image
-            src="/login_bg.jpg"
-            alt="Login background"
-            fill
-            priority
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
-          />
+          <Image src="/login_bg.jpg" alt="Login background" fill className="object-cover" />
         </div>
         <div className="flex-1 flex items-center justify-center bg-gray-100 p-8">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">
@@ -108,30 +97,30 @@ export default function LoginPage() {
 
             {(formError || apiError) && (
               <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm text-center">
-                {formError || (apiError && getLoginErrorMessage(apiError))}
+                {formError || apiError}
               </div>
             )}
 
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
-                  <Mail className="mr-2 text-indigo-500" size={18} /> Email Address
+                  <Mail className="mr-2 text-indigo-500" size={18} /> Email
                 </label>
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmailInput(e.target.value)}
                   required
                   placeholder="you@example.com"
                   className="mt-2 block w-full px-3 py-2 border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 text-black"
                   disabled={isProcessing}
                 />
               </div>
+
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <Lock className="mr-2 text-indigo-500" size={18} /> Password
                 </label>
-
                 <div className="relative mt-2">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -159,31 +148,19 @@ export default function LoginPage() {
                 disabled={isProcessing}
                 className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-600 disabled:opacity-50 transition-all flex items-center justify-center"
               >
-                {isProcessing ? (
-                  <>
-                    <Loader className="animate-spin mr-2" size={20} />
-                  </>
-                ) : (
-                  'Login'
-                )}
+                {isProcessing ? <Loader className="animate-spin mr-2" size={20} /> : 'Login'}
               </button>
             </form>
 
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-gray-600">
-                <Link 
-                  href="/auth/forgot-password" 
-                  className="text-purple-600 hover:underline font-medium"
-                >
+                <Link href="/auth/forgot-password" className="text-purple-600 hover:underline font-medium">
                   Forgot your password?
                 </Link>
               </p>
               <p className="text-sm text-gray-600">
-                Don&apos;t have an account?{' '}
-                <Link 
-                  href="/auth/register" 
-                  className="text-purple-600 hover:underline font-medium"
-                >
+                Don't have an account?{' '}
+                <Link href="/auth/register" className="text-purple-600 hover:underline font-medium">
                   Sign up
                 </Link>
               </p>
