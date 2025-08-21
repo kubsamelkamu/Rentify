@@ -116,7 +116,7 @@ export const fetchLandlordBookings = createAsyncThunk<
   'booking/fetchLandlord',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get('/api/bookings/landlord');
+    const res = await api.get('/api/bookings/landlord');
       return res.data as Booking[];
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
