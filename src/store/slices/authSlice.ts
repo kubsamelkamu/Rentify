@@ -129,6 +129,71 @@ export const forgotPassword = createAsyncThunk<
   }
 );
 
+export const fetchCurrentProfile = createAsyncThunk<
+  User,
+  void,
+  { rejectValue: string }
+>(
+  'auth/fetchProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/api/users/me');
+      return response.data as User;
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Failed to fetch profile';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const saveProfile = createAsyncThunk<
+  User,
+  FormData,
+  { rejectValue: string }
+>(
+  'auth/saveProfile',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/api/users/me', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data as User;
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Failed to save profile';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const applyForLandlord = createAsyncThunk<
+  void,
+  FormData,
+  { rejectValue: string }
+>(
+  'auth/applyForLandlord',
+  async (formData, { rejectWithValue }) => {
+    try {
+      await api.post('/api/auth/apply-landlord', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'Failed to apply for landlord';
+      return rejectWithValue(message);
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: 'auth',
@@ -204,6 +269,55 @@ const authSlice = createSlice({
       .addCase(forgotPassword.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to send reset email';
+      });
+        // fetchCurrentProfile
+    builder
+      .addCase(fetchCurrentProfile.pending, (state) => {
+        state.status = 'loading';
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCurrentProfile.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.loading = false;
+        state.user = action.payload;
+        localStorage.setItem('user', JSON.stringify(action.payload));
+      })
+      .addCase(fetchCurrentProfile.rejected, (state, action) => {
+        state.status = 'failed';
+        state.loading = false;
+        state.error = action.payload || 'Failed to load profile';
+      });
+
+    // saveProfile
+    builder
+      .addCase(saveProfile.pending, (state) => {
+        state.status = 'loading';
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(saveProfile.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.loading = false;
+        state.user = action.payload;
+        localStorage.setItem('user', JSON.stringify(action.payload));
+      })
+      .addCase(saveProfile.rejected, (state, action) => {
+        state.status = 'failed';
+        state.loading = false;
+        state.error = action.payload || 'Failed to save profile';
+      });
+      builder
+      .addCase(applyForLandlord.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(applyForLandlord.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(applyForLandlord.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to apply for landlord';
       });
 
   },
