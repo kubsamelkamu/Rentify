@@ -17,12 +17,14 @@ export interface User {
 
 type AuthState = {
   user: User | null;
-  email: string | null;
+  email: string | null;       
   token: string | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   loading: boolean;
   error: string | null;
+  resetToken?: string | null;  
 };
+
 
 const initialState: AuthState = {
   user: null,
@@ -92,6 +94,28 @@ export const verifyOtp = createAsyncThunk<{ user: User; token: string }, { email
     }
   }
 );
+
+export const verifyResetOtp = createAsyncThunk<
+  { resetToken: string },
+  { email: string; otp: string },
+  { rejectValue: string }
+>(
+  'auth/verifyResetOtp',
+  async ({ email, otp }, { rejectWithValue }) => {
+    try {
+      const res = await api.post('/api/auth/verify-reset-otp', { email, otp });
+      return { resetToken: res.data.resetToken as string };
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.error || err.message
+        : err instanceof Error
+        ? err.message
+        : 'OTP verification failed';
+      return rejectWithValue(message);
+    }
+  }
+);
+
 
 export const resendOtp = createAsyncThunk<void, string, { rejectValue: string }>(
   'auth/resendOtp',
@@ -197,13 +221,18 @@ export const applyForLandlord = createAsyncThunk<
 
 export const resetPassword = createAsyncThunk<
   void,
-  { token: string; newPassword: string },
-  { rejectValue: string }
+  { newPassword: string },
+  { state: { auth: AuthState }; rejectValue: string }
 >(
   'auth/resetPassword',
-  async (data, { rejectWithValue }) => {
+  async ({ newPassword }, { getState, rejectWithValue }) => {
     try {
-      await api.post('/api/auth/reset-password', data);
+      const token = getState().auth.resetToken;
+      if (!token) {
+        return rejectWithValue('Reset token missing. Please verify OTP first.');
+      }
+
+      await api.post('/api/auth/reset-password', { token, newPassword });
     } catch (err: unknown) {
       const message = axios.isAxiosError(err)
         ? err.response?.data?.error || err.message
@@ -214,6 +243,7 @@ export const resetPassword = createAsyncThunk<
     }
   }
 );
+
 
 const authSlice = createSlice({
   name: 'auth',
@@ -302,7 +332,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Password reset failed';
       });
-        // fetchCurrentProfile
     builder
       .addCase(fetchCurrentProfile.pending, (state) => {
         state.status = 'loading';
@@ -320,7 +349,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to load profile';
       });
-          // changeUserRole — update both user & token immediately
     builder
       .addCase(changeUserRole.pending, (state) => {
         state.loading = true;
@@ -338,7 +366,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to update role';
       });
-    // saveProfile
     builder
       .addCase(saveProfile.pending, (state) => {
         state.status = 'loading';
@@ -368,7 +395,19 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to apply for landlord';
       });
-
+      builder
+      .addCase(verifyResetOtp.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyResetOtp.fulfilled, (state, action) => {
+        state.loading = false;
+        state.resetToken = action.payload.resetToken; 
+      })
+      .addCase(verifyResetOtp.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'OTP verification failed';
+      });
   },
 });
 
