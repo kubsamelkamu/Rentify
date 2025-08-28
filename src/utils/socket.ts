@@ -3,7 +3,7 @@ import { User, Property, Booking, Review } from '@/store/slices/adminSlice';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-export interface ServerToClientEvents {
+export interface ServerToClientEvents {  
   'admin:newUser': (user: User) => void;
   'admin:updateUser': (user: User) => void;
   'admin:deleteUser': (userId: string) => void;

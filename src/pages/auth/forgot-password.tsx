@@ -3,25 +3,26 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Mail } from 'lucide-react';
+import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { forgotPassword, clearError } from '@/store/slices/authSlice';
 
 export default function ForgotPasswordPage() {
-    
+
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const { loading, error } = useAppSelector((state) => state.auth);
   const [email, setEmail] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
-  const [message, setMessage] = useState<string>('');
 
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+
     e.preventDefault();
     setFormError('');
-    setMessage('');
 
     if (!email) {
       setFormError('Please enter your email address.');
@@ -30,9 +31,7 @@ export default function ForgotPasswordPage() {
 
     try {
       await dispatch(forgotPassword(email)).unwrap();
-      setMessage(
-        'If an account with that email exists, you will receive a password reset link shortly.'
-      );
+      router.push(`/auth/verify-reset?email=${encodeURIComponent(email)}`);
     } catch (err: unknown) {
       let msg = 'An unexpected error occurred.';
       if (typeof err === 'string') {
@@ -73,12 +72,10 @@ export default function ForgotPasswordPage() {
               Forgot your password?
             </h2>
             <p className="text-sm text-gray-600 mb-6 text-center">
-              Enter your email address and we&apos;ll send you a link to reset your password.
+              Enter your email address and we&apos;ll send you a one-time password (OTP) to verify your identity.
             </p>
             {formError && <p className="text-red-500 text-sm mb-4 text-center">{formError}</p>}
             {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
-            {message && <p className="text-green-600 text-sm mb-4 text-center">{message}</p>}
-
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700">
@@ -93,13 +90,12 @@ export default function ForgotPasswordPage() {
                   className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500"
                 />
               </div>
-
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-600 disabled:opacity-50 transition-all"
               >
-                {loading ? 'Sending…' : 'Send Reset Link'}
+                {loading ? 'Sending…' : 'Send OTP'}
               </button>
             </form>
 

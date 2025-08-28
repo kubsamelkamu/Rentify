@@ -10,9 +10,7 @@ export default function ResetPasswordPage() {
 
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { token } = router.query as { token?: string };
-  const { loading, error } = useAppSelector((state) => state.auth);
-
+  const { loading, error, resetToken } = useAppSelector((state) => state.auth);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNew, setShowNew] = useState(false);
@@ -28,6 +26,10 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setFormError('');
 
+    if (!resetToken) {
+      setFormError('Reset token missing. Please verify OTP first.');
+      return;
+    }
     if (!newPassword || !confirmPassword) {
       setFormError('Please fill in both password fields.');
       return;
@@ -40,22 +42,15 @@ export default function ResetPasswordPage() {
       setFormError('Password must be at least 6 characters.');
       return;
     }
-    if (!token) {
-      setFormError('Invalid or missing token.');
-      return;
-    }
 
     try {
-      await dispatch(resetPassword({ token, newPassword })).unwrap();
+      await dispatch(resetPassword({ newPassword })).unwrap();
       setSuccess(true);
-      setTimeout(() => {
-        router.push('/auth/login');
-      }, 3000);
-    } catch{
-      setFormError( 'Reset failed.');
+      setTimeout(() => router.push('/auth/login'), 3000);
+    } catch {
+      setFormError('Reset failed. Please try again.');
     }
   };
-
 
   return (
     <>
@@ -63,6 +58,7 @@ export default function ResetPasswordPage() {
         <title>Rentify | Reset Password</title>
         <meta name="description" content="Set a new password for your Rentify account." />
       </Head>
+
       <div className="min-h-screen flex flex-col lg:flex-row">
         <div className="hidden lg:block lg:w-1/2 relative">
           <Image
@@ -77,23 +73,23 @@ export default function ResetPasswordPage() {
 
         <div className="flex-1 flex items-center justify-center bg-gray-100 p-8">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">
-            <h1 className="text-4xl font-extrabold text-center mb-6 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
+            <h1 className="text-4xl font-extrabold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
               Reset Password
             </h1>
+
             {success ? (
               <div className="text-center">
                 <CheckCircle size={48} className="text-green-600 mx-auto" />
-                <p className="mt-4 text-lg font-medium text-green-600">Password reset successful!</p>
+                <p className="mt-4 text-lg font-medium text-green-600">
+                  Password reset successful!
+                </p>
                 <p className="mt-2 text-gray-600">Redirecting to login...</p>
               </div>
             ) : (
               <>
-                {formError && (
-                  <p className="text-sm text-red-600 text-center mb-4">{formError}</p>
-                )}
-                {error && (
-                  <p className="text-sm text-red-600 text-center mb-4">{error}</p>
-                )}
+                {formError && <p className="text-sm text-red-600 text-center mb-4">{formError}</p>}
+                {error && <p className="text-sm text-red-600 text-center mb-4">{error}</p>}
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="relative">
                     <label className="flex items-center text-sm font-medium text-gray-700">
@@ -103,8 +99,8 @@ export default function ResetPasswordPage() {
                       type={showNew ? 'text' : 'password'}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      required
                       placeholder="Enter new password"
+                      required
                       className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm pr-10 focus:border-purple-500 focus:ring-purple-500"
                     />
                     <button
@@ -116,6 +112,7 @@ export default function ResetPasswordPage() {
                       {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+
                   <div className="relative">
                     <label className="flex items-center text-sm font-medium text-gray-700">
                       <Lock className="mr-2 text-indigo-500" size={18} /> Confirm Password
@@ -124,8 +121,8 @@ export default function ResetPasswordPage() {
                       type={showConfirm ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
                       placeholder="Confirm new password"
+                      required
                       className="mt-2 block w-full border-gray-200 rounded-lg shadow-sm pr-10 focus:border-purple-500 focus:ring-purple-500"
                     />
                     <button
@@ -145,7 +142,8 @@ export default function ResetPasswordPage() {
                   >
                     {loading ? (
                       <span className="flex items-center justify-center">
-                        <Loader2 className="animate-spin mr-2" size={18} /> 
+                        <Loader2 className="animate-spin mr-2" size={18} />
+                        Resetting…
                       </span>
                     ) : (
                       'Reset Password'
