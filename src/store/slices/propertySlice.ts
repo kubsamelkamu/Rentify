@@ -5,13 +5,10 @@ import api from '@/utils/api';
 export interface Message {
   id: string;
   content: string;
-  createdAt: Date; 
-  sender: {
-    id: string;
-    name: string;
-  };
+  createdAt: Date;
+  sender: { id: string; name: string };
   isOptimistic?: boolean;
-  read: boolean; 
+  read: boolean;
 }
 
 export interface PropertyImage {
@@ -23,7 +20,6 @@ export interface PropertyImage {
 }
 
 export interface Property {
-
   id: string;
   title: string;
   description: string;
@@ -36,8 +32,10 @@ export interface Property {
   landlord?: { id: string; name: string; email: string };
   images?: PropertyImage[];
   createdAt: string;
-
   messages?: Message[];
+
+  likesCount: number;
+  likedByUser: boolean;
 }
 
 export interface FetchPropertiesParams {
@@ -68,11 +66,12 @@ const initialState: PropertyState = {
   error: null,
 };
 
-export const fetchProperties = createAsyncThunk<
-  Property[],
-  FetchPropertiesParams,
-  { rejectValue: string }
->(
+// --------------------
+// Async Thunks
+// --------------------
+
+// Fetch all properties
+export const fetchProperties = createAsyncThunk<Property[], FetchPropertiesParams, { rejectValue: string }>(
   'properties/fetchAll',
   async (params, { rejectWithValue }) => {
     try {
@@ -85,196 +84,203 @@ export const fetchProperties = createAsyncThunk<
       if (params.minBedrooms) query.append('minBedrooms', params.minBedrooms.toString());
       if (params.maxBedrooms) query.append('maxBedrooms', params.maxBedrooms.toString());
       if (params.propertyType) query.append('propertyType', params.propertyType);
-      if (params.amenities) {
-        query.append('amenities', params.amenities.join(','));
-      }
-
+      if (params.amenities) query.append('amenities', params.amenities.join(','));
       const response = await api.get(`/api/properties?${query.toString()}`);
       return response.data.data as Property[];
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        return rejectWithValue(err.response?.data?.error || err.message);
-      }
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
-      }
-      return rejectWithValue('An unknown error occurred while fetching properties.');
+      if (axios.isAxiosError(err)) return rejectWithValue(err.response?.data?.error || err.message);
+      if (err instanceof Error) return rejectWithValue(err.message);
+      return rejectWithValue('Unknown error while fetching properties.');
     }
   }
 );
 
-export const fetchPropertyCount = createAsyncThunk<
-  number,
-  void,
-  { rejectValue: string }
->('properties/fetchCount', async (_, { rejectWithValue }) => {
-  try {
-    const response = await api.get('/api/properties?limit=1');
-    return response.data.total as number;
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      return rejectWithValue(err.response?.data?.error || err.message);
+// Fetch total count
+export const fetchPropertyCount = createAsyncThunk<number, void, { rejectValue: string }>(
+  'properties/fetchCount',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/api/properties?limit=1');
+      return response.data.total as number;
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) return rejectWithValue(err.response?.data?.error || err.message);
+      if (err instanceof Error) return rejectWithValue(err.message);
+      return rejectWithValue('Failed to fetch property count');
     }
-    if (err instanceof Error) {
-      return rejectWithValue(err.message);
-    }
-    return rejectWithValue('Failed to fetch property count');
   }
-});
+);
 
-
-
-export const fetchPropertyById = createAsyncThunk<
-  Property,
-  string,
-  { rejectValue: string }
->('properties/fetchById', async (id, { rejectWithValue }) => {
-  try {
-    const response = await api.get(`/api/properties/${id}`);
-    return response.data as Property;
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      return rejectWithValue(err.response?.data?.error || err.message);
+// Fetch by ID
+export const fetchPropertyById = createAsyncThunk<Property, string, { rejectValue: string }>(
+  'properties/fetchById',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/api/properties/${id}`);
+      return response.data as Property;
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) return rejectWithValue(err.response?.data?.error || err.message);
+      if (err instanceof Error) return rejectWithValue(err.message);
+      return rejectWithValue('Unknown error while fetching property.');
     }
-    if (err instanceof Error) {
-      return rejectWithValue(err.message);
-    }
-    return rejectWithValue('An unknown error occurred while fetching property.');
   }
-});
+);
 
-export const createProperty = createAsyncThunk<
-  Property,
-  Omit<Property, 'id' | 'landlord' | 'images' | 'createdAt'>,
-  { rejectValue: string }
->('properties/create', async (newData, { rejectWithValue }) => {
-  try {
-    const response = await api.post('/api/properties', newData);
-    return response.data as Property;
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      return rejectWithValue(err.response?.data?.error || err.message);
+// Create property
+export const createProperty = createAsyncThunk<Property, Omit<Property, 'id' | 'landlord' | 'images' | 'createdAt' | 'likesCount' | 'likedByUser'>, { rejectValue: string }>(
+  'properties/create',
+  async (newData, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/api/properties', newData);
+      return response.data as Property;
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) return rejectWithValue(err.response?.data?.error || err.message);
+      if (err instanceof Error) return rejectWithValue(err.message);
+      return rejectWithValue('Unknown error while creating property.');
     }
-    if (err instanceof Error) {
-      return rejectWithValue(err.message);
-    }
-    return rejectWithValue('An unknown error occurred while creating property.');
   }
-});
+);
 
-export const updateProperty = createAsyncThunk<
-  Property,
-  { id: string; data: Partial<Omit<Property, 'id' | 'landlord' | 'images'>> },
-  { rejectValue: string }
->('properties/update', async ({ id, data }, { rejectWithValue }) => {
-  try {
-    const response = await api.put(`/api/properties/${id}`, data);
-    return response.data as Property;
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      return rejectWithValue(err.response?.data?.error || err.message);
+// Update property
+export const updateProperty = createAsyncThunk<Property, { id: string; data: Partial<Omit<Property, 'id' | 'landlord' | 'images'>> }, { rejectValue: string }>(
+  'properties/update',
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/api/properties/${id}`, data);
+      return response.data as Property;
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) return rejectWithValue(err.response?.data?.error || err.message);
+      if (err instanceof Error) return rejectWithValue(err.message);
+      return rejectWithValue('Unknown error while updating property.');
     }
-    if (err instanceof Error) {
-      return rejectWithValue(err.message);
-    }
-    return rejectWithValue('An unknown error occurred while updating property.');
   }
-});
+);
 
-export const deleteProperty = createAsyncThunk<
-  string,
-  string,
-  { rejectValue: string }
->('properties/delete', async (id, { rejectWithValue }) => {
-  try {
-    await api.delete(`/api/properties/${id}`);
-    return id;
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      return rejectWithValue(err.response?.data?.error || err.message);
+// Delete property
+export const deleteProperty = createAsyncThunk<string, string, { rejectValue: string }>(
+  'properties/delete',
+  async (id, { rejectWithValue }) => {
+    try {
+      await api.delete(`/api/properties/${id}`);
+      return id;
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) return rejectWithValue(err.response?.data?.error || err.message);
+      if (err instanceof Error) return rejectWithValue(err.message);
+      return rejectWithValue('Unknown error while deleting property.');
     }
-    if (err instanceof Error) {
-      return rejectWithValue(err.message);
-    }
-    return rejectWithValue('An unknown error occurred while deleting property.');
   }
-});
+);
 
+// Like property
+export const likeProperty = createAsyncThunk<{ id: string; likesCount: number; likedByUser: boolean }, string, { rejectValue: string }>(
+  'properties/like',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`/api/properties/${id}/like`);
+      return { id, likesCount: response.data.likes, likedByUser: true };
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) return rejectWithValue(err.response?.data?.error || err.message);
+      if (err instanceof Error) return rejectWithValue(err.message);
+      return rejectWithValue('Failed to like property.');
+    }
+  }
+);
+
+// Unlike property
+export const unlikeProperty = createAsyncThunk<{ id: string; likesCount: number; likedByUser: boolean }, string, { rejectValue: string }>(
+  'properties/unlike',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/api/properties/${id}/like`);
+      return { id, likesCount: response.data.likes, likedByUser: false };
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) return rejectWithValue(err.response?.data?.error || err.message);
+      if (err instanceof Error) return rejectWithValue(err.message);
+      return rejectWithValue('Failed to unlike property.');
+    }
+  }
+);
+
+// --------------------
+// Helper: Optimistic toggle
+// --------------------
+const toggleLikeOptimistic = (state: PropertyState, propertyId: string, liked: boolean) => {
+  const idx = state.items.findIndex(p => p.id === propertyId);
+  if (idx !== -1) {
+    state.items[idx].likedByUser = liked;
+    state.items[idx].likesCount += liked ? 1 : -1;
+  }
+  if (state.current?.id === propertyId) {
+    state.current.likedByUser = liked;
+    state.current.likesCount += liked ? 1 : -1;
+  }
+};
+
+// --------------------
+// Slice
+// --------------------
 const propertySlice = createSlice({
   name: 'properties',
   initialState,
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchProperties.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchProperties.fulfilled, (state, action: PayloadAction<Property[]>) => {
-        state.loading = false;
-        state.items = action.payload;
-      })
-      .addCase(fetchProperties.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload ?? 'Failed to fetch properties';
-      })
-      .addCase(fetchPropertyCount.fulfilled, (state, action: PayloadAction<number>) => {
-        state.totalCount = action.payload;
-      })
-      .addCase(fetchPropertyCount.rejected, (state, action) => {
-        state.error = action.payload ?? 'Failed to fetch property count';
-      })
-      .addCase(fetchPropertyById.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchPropertyById.fulfilled, (state, action: PayloadAction<Property>) => {
-        state.loading = false;
-        state.current = action.payload;
-      })
-      .addCase(fetchPropertyById.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload ?? 'Failed to fetch property';
-      })
-      .addCase(createProperty.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(createProperty.fulfilled, (state, action: PayloadAction<Property>) => {
-        state.loading = false;
-        state.items.unshift(action.payload);
-      })
-      .addCase(createProperty.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload ?? 'Failed to create property';
-      })
-      .addCase(updateProperty.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      // Fetch all
+      .addCase(fetchProperties.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(fetchProperties.fulfilled, (state, action: PayloadAction<Property[]>) => { state.loading = false; state.items = action.payload; })
+      .addCase(fetchProperties.rejected, (state, action) => { state.loading = false; state.error = action.payload ?? 'Failed to fetch properties'; })
+
+      // Count
+      .addCase(fetchPropertyCount.fulfilled, (state, action: PayloadAction<number>) => { state.totalCount = action.payload; })
+      .addCase(fetchPropertyCount.rejected, (state, action) => { state.error = action.payload ?? 'Failed to fetch property count'; })
+
+      // By ID
+      .addCase(fetchPropertyById.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(fetchPropertyById.fulfilled, (state, action: PayloadAction<Property>) => { state.loading = false; state.current = action.payload; })
+      .addCase(fetchPropertyById.rejected, (state, action) => { state.loading = false; state.error = action.payload ?? 'Failed to fetch property'; })
+
+      // Create
+      .addCase(createProperty.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(createProperty.fulfilled, (state, action: PayloadAction<Property>) => { state.loading = false; state.items.unshift(action.payload); })
+      .addCase(createProperty.rejected, (state, action) => { state.loading = false; state.error = action.payload ?? 'Failed to create property'; })
+
+      // Update
+      .addCase(updateProperty.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(updateProperty.fulfilled, (state, action: PayloadAction<Property>) => {
         state.loading = false;
-        const idx = state.items.findIndex((p) => p.id === action.payload.id);
+        const idx = state.items.findIndex(p => p.id === action.payload.id);
         if (idx !== -1) state.items[idx] = action.payload;
         if (state.current?.id === action.payload.id) state.current = action.payload;
       })
-      .addCase(updateProperty.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload ?? 'Failed to update property';
-      })
-      .addCase(deleteProperty.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      .addCase(updateProperty.rejected, (state, action) => { state.loading = false; state.error = action.payload ?? 'Failed to update property'; })
+
+      // Delete
+      .addCase(deleteProperty.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(deleteProperty.fulfilled, (state, action: PayloadAction<string>) => {
         state.loading = false;
-        state.items = state.items.filter((p) => p.id !== action.payload);
+        state.items = state.items.filter(p => p.id !== action.payload);
         if (state.current?.id === action.payload) state.current = undefined;
       })
-      .addCase(deleteProperty.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload ?? 'Failed to delete property';
-      });
+      .addCase(deleteProperty.rejected, (state, action) => { state.loading = false; state.error = action.payload ?? 'Failed to delete property'; })
+
+      // Like: optimistic update
+      .addCase(likeProperty.pending, (state, action) => { toggleLikeOptimistic(state, action.meta.arg, true); })
+      .addCase(likeProperty.fulfilled, (state, action) => {
+        const { id, likesCount, likedByUser } = action.payload;
+        const idx = state.items.findIndex(p => p.id === id);
+        if (idx !== -1) { state.items[idx].likesCount = likesCount; state.items[idx].likedByUser = likedByUser; }
+        if (state.current?.id === id) { state.current.likesCount = likesCount; state.current.likedByUser = likedByUser; }
+      })
+      .addCase(likeProperty.rejected, (state, action) => { toggleLikeOptimistic(state, action.meta.arg, false); })
+
+      // Unlike: optimistic update
+      .addCase(unlikeProperty.pending, (state, action) => { toggleLikeOptimistic(state, action.meta.arg, false); })
+      .addCase(unlikeProperty.fulfilled, (state, action) => {
+        const { id, likesCount, likedByUser } = action.payload;
+        const idx = state.items.findIndex(p => p.id === id);
+        if (idx !== -1) { state.items[idx].likesCount = likesCount; state.items[idx].likedByUser = likedByUser; }
+        if (state.current?.id === id) { state.current.likesCount = likesCount; state.current.likedByUser = likedByUser; }
+      })
+      .addCase(unlikeProperty.rejected, (state, action) => { toggleLikeOptimistic(state, action.meta.arg, true); });
   },
 });
 

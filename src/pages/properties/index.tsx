@@ -4,18 +4,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState, useContext, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchProperties } from '@/store/slices/propertySlice';
+import { fetchProperties, likeProperty, unlikeProperty } from '@/store/slices/propertySlice';
 import { fetchPropertyReviews } from '@/store/slices/reviewSlice';
 import FilterPanel, { PropertyFilters } from './FilterPanel';
 import { motion } from 'framer-motion';
-import { Bed,Bath, Star } from 'lucide-react';
+import { Bed, Bath, Star, Heart } from 'lucide-react';
 import UserLayout from '@/components/userLayout/Layout';
 import { ThemeContext } from '@/components/context/ThemeContext';
 import HeroSection from '@/components/hero/HeroSection';
 import socket, { connectSocket } from '@/utils/socket';
 
 const PropertiesListPage: NextPage = () => {
-
   const dispatch = useAppDispatch();
   const { items, loading, error } = useAppSelector((s) => s.properties);
   const { reviewsByProperty } = useAppSelector((s) => s.reviews);
@@ -25,6 +24,9 @@ const PropertiesListPage: NextPage = () => {
   const [page, setPage] = useState(1);
   const limit = 10;
   const [cityTyping, setCityTyping] = useState('');
+
+  const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
+  const userId = useAppSelector((s) => s.auth.user?.id);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -67,6 +69,25 @@ const PropertiesListPage: NextPage = () => {
 
   const hasNextPage = items.length === limit;
 
+  const toggleLike = (propId: string, liked: boolean) => {
+    if (!userId) {
+      alert('You must be logged in to like properties.');
+      return;
+    }
+    if (likingIds.has(propId)) return; 
+
+    setLikingIds((prev) => new Set(prev).add(propId));
+
+    const action = liked ? unlikeProperty(propId) : likeProperty(propId);
+    dispatch(action).finally(() => {
+      setLikingIds((prev) => {
+        const copy = new Set(prev);
+        copy.delete(propId);
+        return copy;
+      });
+    });
+  };
+
   return (
     <UserLayout>
       <Head>
@@ -76,6 +97,7 @@ const PropertiesListPage: NextPage = () => {
           content="Browse our latest property listings—filter by city, type, and price to find your dream home on Rentify."
         />
       </Head>
+
       <div
         className={`min-h-screen px-6 ${
           theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-800'
@@ -87,8 +109,15 @@ const PropertiesListPage: NextPage = () => {
           <FilterPanel
             initial={filters}
             onCityChange={setCityTyping}
-            onApply={(f) => { setFilters(f); setPage(1); }}
-            onReset={() => { setFilters({}); setCityTyping(''); setPage(1); }}
+            onApply={(f) => {
+              setFilters(f);
+              setPage(1);
+            }}
+            onReset={() => {
+              setFilters({});
+              setCityTyping('');
+              setPage(1);
+            }}
           />
 
           {loading ? (
@@ -103,7 +132,9 @@ const PropertiesListPage: NextPage = () => {
               ))}
             </div>
           ) : error ? (
-            <p className={`text-center mt-12 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
+            <p className={`text-center mt-12 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
+              {error}
+            </p>
           ) : items.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -127,6 +158,8 @@ const PropertiesListPage: NextPage = () => {
             <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((prop, idx) => {
                 const bucket = reviewsByProperty[prop.id];
+                const isLiking = likingIds.has(prop.id);
+
                 return (
                   <div
                     key={prop.id}
@@ -136,20 +169,24 @@ const PropertiesListPage: NextPage = () => {
                         : 'bg-white hover:shadow-2xl'
                     }`}
                   >
-                    <Link href={`/properties/${prop.id}`}
-                     className="relative block h-60 w-full bg-gray-200">
-                        {prop.images?.[0] ? (
-                          <Image
-                            src={prop.images[0].url}
-                            alt={prop.images[0].fileName}
-                            layout="fill"
-                            sizes="(max-width: 640px) 100vw, 33vw"
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            priority={idx === 0}
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center h-full text-gray-400">No Image</div>
-                        )}
+                    <Link
+                      href={`/properties/${prop.id}`}
+                      className="relative block h-60 w-full bg-gray-200"
+                    >
+                      {prop.images?.[0] ? (
+                        <Image
+                          src={prop.images[0].url}
+                          alt={prop.images[0].fileName}
+                          layout="fill"
+                          sizes="(max-width: 640px) 100vw, 33vw"
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          priority={idx === 0}
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-gray-400">
+                          No Image
+                        </div>
+                      )}
                     </Link>
                     <div className="p-6">
                       {bucket?.loading ? (
@@ -180,16 +217,35 @@ const PropertiesListPage: NextPage = () => {
                           <span>{prop.numBathrooms}</span>
                         </div>
                       </div>
-                      <Link href={`/properties/${prop.id}`}
-                      className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+
+                      <div className="flex items-center justify-between">
+                        <Link
+                          href={`/properties/${prop.id}`}
+                          className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                        >
                           View Details
-                      </Link>
+                        </Link>
+                        <button
+                          onClick={() => toggleLike(prop.id, prop.likedByUser ?? false)}
+                          className="flex items-center space-x-1 disabled:opacity-50"
+                          disabled={isLiking || !userId}
+                        >
+                          <Heart
+                            size={20}
+                            className={`transition-colors ${
+                              prop.likedByUser ? 'fill-red-500 text-red-500' : 'text-gray-400'
+                            }`}
+                          />
+                          <span className="text-sm">{prop.likesCount ?? 0}</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
+
           <div className="flex justify-center space-x-2 mt-10">
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 1))}

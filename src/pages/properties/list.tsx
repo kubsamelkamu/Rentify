@@ -77,7 +77,7 @@ const NewPropertyPage: NextPage = () => {
     e.preventDefault();
     setFormError('');
 
-    const lettersOnlyRegex = /^[A-Za-z\s.,]+$/;
+    const lettersOnlyRegex =/^[A-Za-z0-9\s.,]+$/
     if (!lettersOnlyRegex.test(title.trim())) {
       setFormError('Title must contain only letters and spaces.');
       return;
