@@ -7,7 +7,6 @@ import { motion } from 'framer-motion';
 import NewsletterSignup from '../hero/Newsletter';
 
 export default function Footer() {
-
   const { theme, toggleTheme } = useContext(ThemeContext)!;
   const { user } = useAppSelector((state) => state.auth);
 
@@ -26,23 +25,49 @@ export default function Footer() {
         theme === 'dark' ? 'bg-gray-900 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-800'
       }`}
     >
-      <div className="max-w-7xl mx-auto py-10 px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        <div>
-          <Link href="/">
-            <span
-              className={`text-2xl font-bold cursor-pointer transition-colors ${
+      <div className="max-w-7xl mx-auto py-10 px-4 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8">
+        <div className="md:col-span-2 lg:col-span-1 flex flex-col justify-between">
+          <div>
+            <Link href="/">
+              <span
+                className={`text-2xl font-bold cursor-pointer transition-colors ${
+                  theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                }`}
+              >
+                Rentify
+              </span>
+            </Link>
+            <p className="mt-4 text-sm leading-relaxed">
+              Your trusted platform for finding and listing rental properties. We connect landlords and tenants seamlessly
+              for a smooth rental experience.
+            </p>
+          </div>
+          
+          <div className="mt-6 flex flex-col items-start">
+            <h4 className="text-lg font-semibold mb-2">Get the Rentify App</h4>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="mb-2"
+            >
+              <img
+                src="/rentify-apk-qr.png"
+                alt="Download Rentify APK QR Code"
+                className="w-28 h-28 border rounded shadow-lg"
+              />
+            </motion.div>
+            <a
+              href="https://github.com/kubsamelkamu/RentifyMobile/releases/download/v1.0.0/Rentify.apk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`text-sm underline font-medium transition-colors duration-200 hover:${
                 theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
               }`}
             >
-              Rentify
-            </span>
-          </Link>
-          <p className="mt-4 text-sm leading-relaxed">
-            Your trusted platform for finding and listing rental properties. We connect landlords and tenants seamlessly
-            for a smooth rental experience.
-          </p>
+              Download Rentify
+            </a>
+            <span className="text-xs text-gray-500 mt-1">Scan or tap to install on Android</span>
+          </div>
         </div>
-
         <div>
           <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
           <ul className="space-y-2">
@@ -69,7 +94,7 @@ export default function Footer() {
           <p className="text-sm mb-2">
             Email:{' '}
             <a
-              href="mailto:srentify@gmail.com"
+              href="mailto:support@rentify.et"
               className={`transition-colors duration-200 hover:${
                 theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
               }`}
@@ -79,7 +104,7 @@ export default function Footer() {
           </p>
         </div>
 
-        <div>
+        <div className="md:col-start-4 md:row-start-1 lg:col-start-4 lg:col-span-2 lg:row-span-2">
           <NewsletterSignup />
         </div>
       </div>
