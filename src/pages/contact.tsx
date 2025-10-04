@@ -1,3 +1,4 @@
+'use client';
 import { useForm, SubmitHandler } from 'react-hook-form'
 import { useContext, useState } from 'react'
 import { ThemeContext } from '@/components/context/ThemeContext'
@@ -74,18 +75,18 @@ function ContactInfoCard({ icon, title, detail, href, description, theme }: Cont
       href={href || '#'}
       target={href ? '_blank' : undefined}
       rel={href ? 'noopener noreferrer' : undefined}
-      whileHover={{ scale: 1.03 }}
+      whileHover={{ scale: 1.05 }} // Slightly increased hover scale for larger cards
       className={`
-        flex flex-col items-start p-6 rounded-xl shadow-lg
+        flex flex-col items-start p-8 rounded-xl shadow-lg h-full // Increased padding
         ${bgClass} ${textClass}
       `}
     >
       <div className="mb-4 text-indigo-600">{icon}</div>
-      <h4 className="text-lg font-semibold mb-1">{title}</h4>
-      <p className="font-medium mb-1">
+      <h4 className="text-xl font-semibold mb-2">{title}</h4> {/* Larger title */}
+      <p className="font-medium mb-1 text-lg"> {/* Larger detail */}
         {href ? <a href={href} className="underline">{detail}</a> : detail}
       </p>
-      <p className="text-sm">{description}</p>
+      <p className="text-base">{description}</p> {/* Larger description */}
     </motion.a>
   )
 }
@@ -156,18 +157,27 @@ export default function ContactPage() {
         <link rel="canonical" href="/contact" />
       </Head>
       <header
-        className={`relative py-20 px-4 ${
-          theme === 'light'
-            ? 'bg-gradient-to-r from-indigo-900 via-purple-900 to-indigo-900 text-white'
-            : 'bg-gradient-to-r from-gray-900 via-indigo-950 to-gray-900 text-indigo-100'
-        }`}
+        className="relative py-24 px-4 overflow-hidden" // Increased padding and added overflow-hidden
       >
-        <div className="absolute inset-0 bg-black/20"></div>
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+
+          src="https://www.pexels.com/download/video/3206480/"
+          poster="https://images.pexels.com/photos/17693439/pexels-photo-17693439/free-photo-of-modern-skyscrapers-and-houses-in-city.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200" // A relevant poster image
+          className="absolute top-0 left-0 w-full h-full object-cover z-0"
+        >
+          <source src="https://www.pexels.com/download/video/3206480/" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        <div className="absolute inset-0 bg-black/50 z-10"></div> {/* Darker overlay for better text readability */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative max-w-6xl mx-auto text-center z-10"
+          className="relative max-w-6xl mx-auto text-center z-20 text-white" // Ensure text is white for contrast
         >
           <h1 className="text-4xl md:text-6xl font-bold mb-6">Get in Touch</h1>
           <p className="text-xl max-w-3xl mx-auto text-indigo-200">
@@ -182,7 +192,7 @@ export default function ContactPage() {
         }`}
       >
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-16"> {/* Increased gap for larger cards */}
             {contactInfo.map((info, idx) => (
               <ContactInfoCard key={idx} theme={theme} {...info} />
             ))}
