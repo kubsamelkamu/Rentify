@@ -1,10 +1,10 @@
 'use client';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Building, Users, Star, ArrowRight, MapPin } from 'lucide-react';
+import { Building, Users, Star, ArrowRight, MapPin, Quote } from 'lucide-react';
 import CountUp from 'react-countup';
 import { useInView } from 'react-intersection-observer';
 import { ThemeContext } from '@/components/context/ThemeContext';
@@ -35,12 +35,32 @@ interface PropertyCardProps {
   featured?: boolean;
 }
 
+interface TestimonialProps {
+  theme: Theme;
+  quote: string;
+  author: string;
+  title: string;
+  avatar: string;
+}
+
+interface PartnerProps {
+  theme: Theme;
+  name: string;
+  logo: string;
+  link: string;
+}
+
 export default function HomePage() {
   const { theme } = useContext(ThemeContext)! as { theme: Theme };
   const dispatch = useAppDispatch();
 
   const { items: recentProperties = [], loading } = useAppSelector((s) => s.properties);
   const { metrics } = useAppSelector((s) => s.admin)!;
+
+  // State and ref for auto-scrolling partners
+  const scrollRefPartners = useRef<HTMLDivElement>(null);
+  const [isHoveredPartners, setIsHoveredPartners] = useState(false);
+
 
   useEffect(() => {
     dispatch(fetchProperties({ page: 1, limit: 3 }));
@@ -74,6 +94,105 @@ export default function HomePage() {
     },
   ];
 
+  // Dummy data for Testimonials
+  const testimonials: Omit<TestimonialProps, 'theme'>[] = [
+    {
+      quote: "Rentify made finding my dream apartment incredibly easy and stress-free. The platform is intuitive!",
+      author: "Lidiya Abera",
+      title: "New Tenant",
+      avatar: "https://randomuser.me/api/portraits/women/68.jpg",
+    },
+    {
+      quote: "Listing my property on Rentify brought me quality tenants faster than any other platform. Highly recommend for landlords!",
+      author: "Kenenisa Gizaw",
+      title: "Property Owner",
+      avatar: "https://randomuser.me/api/portraits/men/70.jpg",
+    },
+    {
+      quote: "I found a great house for my family within days. The detailed listings and virtual tours were a game-changer.",
+      author: "Sara Ahmed",
+      title: "Happy Renter",
+      avatar: "https://randomuser.me/api/portraits/women/71.jpg",
+    },
+  ];
+
+  // Dummy data for Partners - MUST BE DECLARED BEFORE useEffect that uses it
+const partners: Omit<PartnerProps, 'theme'>[] = [
+  { 
+    name: "Bank of Ethiopia", 
+    logo: "https://www.addisinsight.net/wp-content/uploads/2025/08/images-38.jpeg", 
+    link: "https://www.combanketh.et/home" 
+  },
+  { 
+    name: "Habesha Construction", 
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRF5GfOPlAHivdCyzub-RMaBlugyV8WTKwuJAboan3TKT-R7Go-TPGiIynQiWMUhVfhmWE&usqp=CAU", 
+    link: "https://www.2merkato.com/directory/15244-habesha-construction-materials-and-development-sc" 
+  },
+  { 
+    name: "Ovid Real Estate", 
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqkcj69ioVesFQZlAwLOdy2dB5Iu0QV0vAxA&s", 
+    link: "https://ovid-realestates.com/" 
+  },
+  { 
+    name: "SafeWay Insurance", 
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRLguIlQ6n5u7mXtne6JXs3k6cNJ7kq6_VGLU3T1ntlynVd7z2ltrqbJeedM2NpkstTBcI&usqp=CAU", 
+    link: "https://safewayinsure.com/" 
+  },
+  { 
+    name: "Digital Solutions", 
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtif2a5Hr1Iz8HPYj0Pip9SKHpXDg1FpSKEQ&s", 
+    link: "https://digitalsolutions.com" 
+  },
+  { 
+    name: "Mega Properties", 
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQk9KD4X3IT7ufXMvJbnKHCtrqoV17H4VsSkA&s", 
+    link: "https://megaproperties.com" 
+  },
+  { 
+    name: "Abyssinia Banks", 
+    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxIRmd_SNwYy-UvK931sPbd1ULUi9gdEpucg&s", 
+    link: "https://bankofabyssinia.com" 
+  },
+];
+
+
+
+  // Duplicate partners for continuous scroll - MUST BE DECLARED AFTER original partners
+  const displayPartners = [...partners, ...partners, ...partners];
+
+
+  // useEffect for auto-scrolling partners - NOW PLACED AFTER `partners` and `displayPartners` declaration
+  useEffect(() => {
+    const scrollElement = scrollRefPartners.current;
+    if (!scrollElement) return;
+
+    let animationFrameId: number;
+    const scrollSpeed = 0.5; // Pixels per frame, adjust for desired speed
+
+    const animateScroll = () => {
+      if (!isHoveredPartners) {
+        scrollElement.scrollLeft += scrollSpeed;
+
+        const firstCard = scrollElement.children[0] as HTMLElement;
+        const cardWidth = firstCard?.offsetWidth || 150;
+
+        const firstSetTotalWidth = partners.length * cardWidth;
+
+        if (scrollElement.scrollLeft >= firstSetTotalWidth) {
+          scrollElement.scrollLeft = 0;
+        }
+      }
+      animationFrameId = requestAnimationFrame(animateScroll);
+    };
+
+    animationFrameId = requestAnimationFrame(animateScroll);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [isHoveredPartners, partners.length]); // Added partners.length to dependencies
+
+
   return (
     <UserLayout>
       <Head>
@@ -86,19 +205,24 @@ export default function HomePage() {
       </Head>
 
       <div className={`transition-colors duration-300 ${theme === 'light' ? 'bg-gray-50' : 'bg-gray-900'}`}>
+        {/* Hero Section */}
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            poster="https://images.unsplash.com/photo-1582407947304-fd86f028f716?q=80&w=2070&auto=format&fit=crop"
-            className="absolute top-0 left-0 w-full h-full object-cover z-0"
-          >
-            <source src="https://cdn.pixabay.com/video/2021/10/12/91744-636709154_tiny.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-          <div className="absolute top-0 left-0 w-full h-full bg-black/60 z-1"></div>
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+
+          src="https://www.pexels.com/download/video/14372136/"
+          poster="https://images.unsplash.com/photo-1582407947304-fd86f028f716?q=80&w=2070&auto=format&fit=crop" // A relevant poster image
+          className="absolute top-0 left-0 w-full h-full object-cover z-0"
+        >
+          <source src="https://www.pexels.com/download/video/14372136/" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+          {/* REMOVED: <div className="absolute top-0 left-0 w-full h-full bg-black/60 z-1"></div> */}
+          {/* Add a subtle overlay if desired, but with less opacity, e.g., bg-black/20 */}
+          <div className="absolute top-0 left-0 w-full h-full bg-black/20 z-1"></div> 
           <div className="relative z-10 max-w-3xl text-center px-4">
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
               <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
@@ -120,7 +244,9 @@ export default function HomePage() {
             </motion.div>
           </div>
         </section>
-        <section className={`py-20 ${theme === 'light' ? 'bg-white' : 'bg-gray-800'}`}>
+
+        {/* Featured Properties Section */}
+        <section className={`py-20 ${theme === 'light' ? 'bg-gray-50' : 'bg-gray-900'}`}> {/* Changed background */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -130,7 +256,7 @@ export default function HomePage() {
               className="text-center mb-16"
             >
               <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>
-                Featured Properties
+                Featured <span className="text-[#FF8904]">Properties</span>
               </h2>
               <p className={`text-xl max-w-3xl mx-auto ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
                 Here are the 3 most recently listed homes.
@@ -158,6 +284,8 @@ export default function HomePage() {
             )}
           </div>
         </section>
+
+        {/* Stats Section */}
         <section className={`py-20 ${theme === 'light' ? 'bg-gray-50' : 'bg-gray-900'}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((s, i) => (
@@ -165,6 +293,78 @@ export default function HomePage() {
             ))}
           </div>
         </section>
+        
+        {/* What Our Users Say Section (Testimonials) */}
+        <section className={`py-20 ${theme === 'light' ? 'bg-gray-50' : 'bg-gray-900'}`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-16"
+            >
+              <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>
+                What Our Users <span className="text-[#FF8904]">Say</span>
+              </h2>
+              <p className={`text-xl max-w-3xl mx-auto ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
+                Hear directly from our satisfied tenants and property owners.
+              </p>
+            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {testimonials.map((testimonial, i) => (
+                <TestimonialCard key={i} theme={theme} {...testimonial} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Trusted Partners Section */}
+        <section className={`py-20 ${theme === 'light' ? 'bg-gray-50' : 'bg-gray-900'}`}> {/* Changed background */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-16"
+            >
+              <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>
+                Trusted by the <span className="text-[#432DD7]">Industry&apos;s Best</span>
+              </h2>
+              <p className={`text-xl max-w-3xl mx-auto ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
+                Collaborating with leading businesses to enhance your rental experience.
+              </p>
+            </motion.div>
+
+            {/* Auto-scrolling partners container */}
+            <div className="relative overflow-hidden group">
+              <div
+                ref={scrollRefPartners}
+                onMouseEnter={() => setIsHoveredPartners(true)}
+                onMouseLeave={() => setIsHoveredPartners(false)}
+                className="flex items-stretch flex-nowrap overflow-x-hidden overflow-y-hidden"
+              >
+                {displayPartners.map((partner, i) => (
+                  <motion.div
+                    key={`${partner.name}-${i}`} // Use a unique key
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }} // Still use whileInView for initial load animation
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                    className="flex-none p-2 w-1/2 sm:w-1/3 md:w-1/4 lg:w-1/5" // Adjust width as needed for your desired card size
+                  >
+                    <PartnerCard theme={theme} {...partner} />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+            {/* End Auto-scrolling partners container */}
+
+          </div>
+        </section>
+
+        {/* Join the Revolution Section */}
         <section className="py-16 px-4">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="max-w-4xl mx-auto text-center">
             <h2 className={`text-3xl font-bold mb-6 ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>Join the Rental Revolution</h2>
@@ -203,7 +403,7 @@ const StatCard = ({ theme, icon, value, label, description }: StatCardProps) => 
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
-      className={`text-center p-6 rounded-xl ${theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-gray-700 hover:bg-gray-600'} transition-all duration-300`}
+      className={`text-center p-6 rounded-xl ${theme === 'light' ? 'bg-white hover:bg-gray-100' : 'bg-gray-700 hover:bg-gray-600'} transition-all duration-300 shadow-sm`}
     >
       <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${theme === 'light' ? 'bg-indigo-100 text-indigo-600' : 'bg-indigo-900 text-indigo-400'}`}>{icon}</div>
       <div className={`text-3xl font-bold mb-2 ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>{inView ? <CountUp end={value} duration={2} separator="," /> : '0'}{label.includes('Rating') ? '' : '+'}</div>
@@ -243,4 +443,44 @@ const PropertyCard = ({ theme, id, image, title, location, price, beds, baths, f
       <Link href={`/properties/${id}`} className={`inline-block w-full text-center px-4 py-2 rounded-lg font-semibold transition-all duration-300 mt-2 ${theme === 'light' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-indigo-700 text-white hover:bg-indigo-600'}`}>View Detail</Link>
     </div>
   </motion.div>
+);
+
+const TestimonialCard = ({ theme, quote, author, title, avatar }: TestimonialProps) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.5 }}
+    className={`relative p-8 rounded-xl ${theme === 'light' ? 'bg-white shadow-lg hover:shadow-xl hover:-translate-y-1' : 'bg-gray-800 shadow-xl hover:bg-gray-700 hover:-translate-y-1'} transition-all duration-300`}
+  >
+    <Quote className={`absolute top-6 left-6 w-10 h-10 ${theme === 'light' ? 'text-indigo-200' : 'text-indigo-900'} opacity-60`} />
+    <p className={`text-lg italic mb-6 leading-relaxed ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'} pl-14 pt-4`}>
+      &quot;{quote}&quot;
+    </p>
+    <div className="flex items-center">
+      <Image src={avatar} alt={author} width={56} height={56} className="w-14 h-14 rounded-full object-cover mr-4 border-2 border-indigo-400" />
+      <div>
+        <h4 className={`text-lg font-semibold ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>{author}</h4>
+        <p className={`text-sm ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>{title}</p>
+      </div>
+    </div>
+  </motion.div>
+);
+
+const PartnerCard = ({ theme, name, logo, link }: PartnerProps) => (
+  <motion.a
+    href={link}
+    target="_blank"
+    rel="noopener noreferrer"
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.5 }}
+    className={`flex flex-col items-center justify-center p-4 rounded-lg group ${theme === 'light' ? 'bg-white hover:bg-gray-50' : 'bg-gray-800 hover:bg-gray-700'} transition-colors duration-300 transform hover:scale-105 h-full`}
+  >
+    <div className="w-24 h-24 relative mb-2 flex items-center justify-center">
+      <Image src={logo} alt={name} layout="fill" objectFit="contain" className="transition-all duration-300" />
+    </div>
+    <span className={`text-sm font-medium ${theme === 'light' ? 'text-gray-600 group-hover:text-indigo-600' : 'text-gray-300 group-hover:text-indigo-400'} transition-colors`}>{name}</span>
+  </motion.a>
 );
