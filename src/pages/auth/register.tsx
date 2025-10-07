@@ -1,7 +1,6 @@
 import { useState, FormEvent, useEffect, ChangeEvent, ElementType } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import Image from 'next/image';
 import { User, Mail, Lock, Eye, EyeOff, Loader, UploadCloud } from 'lucide-react'; // Added UploadCloud icon
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -196,14 +195,19 @@ export default function RegisterPage() {
       </Head>
       <div className="min-h-screen flex flex-col lg:flex-row">
         <div className="hidden lg:block lg:w-1/2 relative">
-          <Image
-            src="/register-bg.jpg"
-            alt="Register background"
-            fill
-            priority
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
-          />
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+
+          src="https://www.pexels.com/download/video/7768205/"
+          poster="https://images.pexels.com/photos/3643925/pexels-photo-3643925.jpeg" // A relevant poster image
+          className="absolute top-0 left-0 w-full h-full object-cover z-0"
+        >
+          <source src="https://www.pexels.com/download/video/7768205/" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
         </div>
         <div className="flex-1 flex items-center justify-center p-8 bg-gray-100">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -85,7 +84,19 @@ export default function LoginPage() {
       </Head>
       <div className="min-h-screen flex flex-col lg:flex-row">
         <div className="hidden lg:block lg:w-1/2 relative">
-          <Image src="/login_bg.jpg" alt="Login background" fill className="object-cover" />
+          <video
+          autoPlay
+          loop
+          muted
+          playsInline
+
+          src="https://www.pexels.com/download/video/7768205/"
+          poster="https://images.pexels.com/photos/3643925/pexels-photo-3643925.jpeg" // A relevant poster image
+          className="absolute top-0 left-0 w-full h-full object-cover z-0"
+        >
+          <source src="https://www.pexels.com/download/video/7768205/" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
         </div>
         <div className="flex-1 flex items-center justify-center bg-gray-100 p-8">
           <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl">

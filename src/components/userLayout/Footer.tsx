@@ -71,7 +71,7 @@ export default function Footer() {
         <div>
           <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
           <ul className="space-y-2">
-            {['home','about', 'properties', 'bookings','contact', 'terms&conditions'].map((key) => {
+            {['home','about', 'properties', 'bookings','contact', 'terms&conditions', 'services'].map((key) => {
               const linkHref = key === 'bookings' ? bookingsLink : `/${key}`;
               return (
                 <li key={key}>
