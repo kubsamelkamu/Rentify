@@ -2,7 +2,7 @@ import { useState, FormEvent, useEffect, ChangeEvent, ElementType } from 'react'
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { User, Mail, Lock, Eye, EyeOff, Loader } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Loader, UploadCloud } from 'lucide-react'; // Added UploadCloud icon
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { registerUser, setEmail, clearError } from '@/store/slices/authSlice';
@@ -29,7 +29,7 @@ const InputField = ({ id, label, icon: Icon, type, ...props }: InputFieldProps) 
           id={id}
           name={id}
           type={currentType}
-          className={`block w-full border-gray-200 rounded-lg shadow-sm px-3 focus:border-purple-500 focus:ring-purple-500 text-black ${
+          className={`block w-full border-gray-200 rounded-lg shadow-sm px-3 py-2 focus:border-purple-500 focus:ring-purple-500 text-black ${
             isPasswordType ? 'pr-10' : ''
           }`}
           {...props}
@@ -49,6 +49,45 @@ const InputField = ({ id, label, icon: Icon, type, ...props }: InputFieldProps) 
   );
 };
 
+// New FileInput Component for professional ID upload
+interface FileInputProps {
+  id: string;
+  label: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  currentFileName?: string; // Optional prop to display selected file name
+}
+
+const FileInput = ({ id, label, onChange, currentFileName }: FileInputProps) => {
+  return (
+    <div>
+      <label htmlFor={id} className="flex items-center text-sm font-medium text-gray-700 mb-2">
+        <UploadCloud className="mr-2 text-indigo-500" size={18} /> {label}
+      </label>
+      <div className="flex items-center space-x-2">
+        <label
+          htmlFor={id}
+          className="flex-1 py-2 px-3 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 cursor-pointer hover:bg-gray-50 focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-purple-500 transition-all"
+        >
+          <span className="truncate block">
+            {currentFileName || `Choose file for ${label.toLowerCase()}`}
+          </span>
+          <input
+            id={id}
+            name={id}
+            type="file"
+            accept="image/*,.pdf" // Accept images or PDFs
+            onChange={onChange}
+            className="sr-only" // Hide the default file input
+          />
+        </label>
+        {currentFileName && (
+          <span className="text-xs text-gray-500">Selected: {currentFileName}</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function RegisterPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -59,11 +98,13 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    idFront: null as File | null, // State for ID front image
+    idBack: null as File | null,  // State for ID back image
   });
   const [agree, setAgree] = useState(false);
   const [formError, setFormError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const { name, email, password, confirmPassword } = formData;
+  const { name, email, password, confirmPassword, idFront, idBack } = formData;
 
   useEffect(() => {
     dispatch(clearError());
@@ -72,6 +113,16 @@ export default function RegisterPage() {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // New handler for file inputs
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, files } = e.target;
+    if (files && files.length > 0) {
+      setFormData((prev) => ({ ...prev, [name]: files[0] }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -89,15 +140,35 @@ export default function RegisterPage() {
       return;
     }
 
+    // New validation for ID files
+    if (!idFront) {
+      setFormError('Please upload the front of your ID.');
+      return;
+    }
+    if (!idBack) {
+      setFormError('Please upload the back of your ID.');
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      const result = await dispatch(registerUser({ name, email, password }));
+      // You'll need to adjust your registerUser API call to handle file uploads.
+      // Typically, you'd use FormData for this when sending to a backend.
+      const registrationData = {
+        name,
+        email,
+        password,
+        // For actual API submission, you would append idFront and idBack to FormData
+        // e.g., const formDataForApi = new FormData();
+        // formDataForApi.append('name', name);
+        // formDataForApi.append('idFront', idFront);
+        // ... and then pass formDataForApi to your API call.
+      };
+      
+      const result = await dispatch(registerUser(registrationData)); 
 
       if (registerUser.fulfilled.match(result)) {
-        // ✅ Save email in Redux so verify-otp can access it
         dispatch(setEmail(email));
-
-        // ✅ Redirect without query params
         router.push('/auth/verify-otp');
       }
     } catch (err: unknown) {
@@ -180,6 +251,21 @@ export default function RegisterPage() {
                 placeholder="********"
                 required
               />
+
+              {/* New ID Upload Fields */}
+              <FileInput
+                id="idFront"
+                label="Upload ID Front"
+                onChange={handleFileChange}
+                currentFileName={idFront?.name}
+              />
+              <FileInput
+                id="idBack"
+                label="Upload ID Back"
+                onChange={handleFileChange}
+                currentFileName={idBack?.name}
+              />
+
               <div className="flex items-center">
                 <input
                   id="agree-checkbox"
