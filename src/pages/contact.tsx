@@ -75,18 +75,18 @@ function ContactInfoCard({ icon, title, detail, href, description, theme }: Cont
       href={href || '#'}
       target={href ? '_blank' : undefined}
       rel={href ? 'noopener noreferrer' : undefined}
-      whileHover={{ scale: 1.05 }} // Slightly increased hover scale for larger cards
+      whileHover={{ scale: 1.05 }}
       className={`
-        flex flex-col items-start p-8 rounded-xl shadow-lg h-full // Increased padding
+        flex flex-col items-start p-8 rounded-xl shadow-lg h-full
         ${bgClass} ${textClass}
       `}
     >
       <div className="mb-4 text-indigo-600">{icon}</div>
-      <h4 className="text-xl font-semibold mb-2">{title}</h4> {/* Larger title */}
-      <p className="font-medium mb-1 text-lg"> {/* Larger detail */}
+      <h4 className="text-xl font-semibold mb-2">{title}</h4>
+      <p className="font-medium mb-1 text-lg">
         {href ? <a href={href} className="underline">{detail}</a> : detail}
       </p>
-      <p className="text-base">{description}</p> {/* Larger description */}
+      <p className="text-base">{description}</p>
     </motion.a>
   )
 }
@@ -156,28 +156,27 @@ export default function ContactPage() {
         <meta name="description" content="Get in touch with the Rentify team for support or inquiries." />
         <link rel="canonical" href="/contact" />
       </Head>
-      <header
-        className="relative py-24 px-4 overflow-hidden" // Increased padding and added overflow-hidden
-      >
+
+      {/* Hero Section */}
+      <header className="relative py-24 px-4 overflow-hidden">
         <video
           autoPlay
           loop
           muted
           playsInline
-
           src="https://www.pexels.com/download/video/3206480/"
-          poster="https://images.pexels.com/photos/17693439/pexels-photo-17693439/free-photo-of-modern-skyscrapers-and-houses-in-city.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200" // A relevant poster image
+          poster="https://images.pexels.com/photos/17693439/pexels-photo-17693439/free-photo-of-modern-skyscrapers-and-houses-in-city.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200"
           className="absolute top-0 left-0 w-full h-full object-cover z-0"
         >
           <source src="https://www.pexels.com/download/video/3206480/" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
-        <div className="absolute inset-0 bg-black/50 z-10"></div> {/* Darker overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/50 z-10"></div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative max-w-6xl mx-auto text-center z-20 text-white" // Ensure text is white for contrast
+          className="relative max-w-6xl mx-auto text-center z-20 text-white"
         >
           <h1 className="text-4xl md:text-6xl font-bold mb-6">Get in Touch</h1>
           <p className="text-xl max-w-3xl mx-auto text-indigo-200">
@@ -186,19 +185,19 @@ export default function ContactPage() {
           </p>
         </motion.div>
       </header>
-      <section
-        className={`py-16 px-4 ${
-          theme === 'light' ? 'bg-indigo-50' : 'bg-gray-800'
-        }`}
-      >
+
+      {/* Contact Info */}
+      <section className={`py-16 px-4 ${theme === 'light' ? 'bg-indigo-50' : 'bg-gray-800'}`}>
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-16"> {/* Increased gap for larger cards */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-16">
             {contactInfo.map((info, idx) => (
               <ContactInfoCard key={idx} theme={theme} {...info} />
             ))}
           </div>
         </div>
       </section>
+
+      {/* Contact Form + FAQ */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -210,6 +209,7 @@ export default function ContactPage() {
         }`}
       >
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12">
+          {/* Left - Info & FAQs */}
           <motion.div
             initial="rest"
             whileHover="hover"
@@ -270,7 +270,7 @@ export default function ContactPage() {
             ))}
           </motion.div>
 
-          {/* Right - Form */}
+          {/* Right - Contact Form */}
           <motion.form
             onSubmit={handleSubmit(onSubmit)}
             initial="rest"
@@ -289,6 +289,7 @@ export default function ContactPage() {
               Send Us a Message
             </motion.h2>
 
+            {/* Name + Email Fields with Validation */}
             {[
               { id: 'name', label: 'Name', required: true, type: 'text' },
               { id: 'email', label: 'Email', required: true, type: 'email' },
@@ -302,6 +303,11 @@ export default function ContactPage() {
                     pattern:
                       id === 'email'
                         ? { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email' }
+                        : id === 'name'
+                        ? {
+                            value: /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/,
+                            message: 'Name should contain only letters and spaces',
+                          }
                         : undefined,
                   })}
                   className={`peer w-full border rounded-lg px-4 pt-6 pb-2 focus:outline-none ${
@@ -416,7 +422,9 @@ export default function ContactPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className={`mt-4 text-center ${
-                  serverResponse.toLowerCase().includes('success') ? 'text-green-600' : 'text-red-600'
+                  serverResponse.toLowerCase().includes('success')
+                    ? 'text-green-600'
+                    : 'text-red-600'
                 }`}
               >
                 {serverResponse}
