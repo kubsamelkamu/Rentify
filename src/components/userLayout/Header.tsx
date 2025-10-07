@@ -93,9 +93,9 @@ export default function Header() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
-        <Link href="/">
+<Link href="/">
           <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 cursor-pointer">
-            Rentify
+            <span className="text-[#FF8904]">🏠 Rentify</span>
           </span>
         </Link>
         <nav className="hidden md:flex items-center space-x-6">

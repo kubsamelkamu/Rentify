@@ -151,22 +151,6 @@ export default function AboutPage() {
             >
               At Rentify, we&apos;re not just building a platform; we&apos;re crafting the future of property rentals. Experience seamless, secure, and smart solutions.
             </motion.p>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6, duration: 1 }}
-              className="mt-10"
-            >
-              <button
-                className={`px-10 py-4 rounded-full text-lg font-semibold shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus:ring-4 ${
-                  theme === 'light'
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500/50'
-                    : 'bg-indigo-500 text-white hover:bg-indigo-600 focus:ring-indigo-400/50'
-                }`}
-              >
-                Explore Our Vision
-              </button>
-            </motion.div>
           </div>
           {/* Decorative background elements */}
           <motion.div

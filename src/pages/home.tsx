@@ -98,21 +98,21 @@ export default function HomePage() {
   const testimonials: Omit<TestimonialProps, 'theme'>[] = [
     {
       quote: "Rentify made finding my dream apartment incredibly easy and stress-free. The platform is intuitive!",
-      author: "Lidiya Abera",
+      author: "Aliyii Aman",
       title: "New Tenant",
-      avatar: "https://randomuser.me/api/portraits/women/68.jpg",
+      avatar: "https://images.pexels.com/photos/8197947/pexels-photo-8197947.jpeg",
     },
     {
       quote: "Listing my property on Rentify brought me quality tenants faster than any other platform. Highly recommend for landlords!",
       author: "Kenenisa Gizaw",
       title: "Property Owner",
-      avatar: "https://randomuser.me/api/portraits/men/70.jpg",
+      avatar: "https://images.pexels.com/photos/4431445/pexels-photo-4431445.jpeg",
     },
     {
       quote: "I found a great house for my family within days. The detailed listings and virtual tours were a game-changer.",
-      author: "Sara Ahmed",
+      author: "Fenet Ahmed",
       title: "Happy Renter",
-      avatar: "https://randomuser.me/api/portraits/women/71.jpg",
+      avatar: "https://images.pexels.com/photos/17464867/pexels-photo-17464867.jpeg",
     },
   ];
 
@@ -139,9 +139,9 @@ const partners: Omit<PartnerProps, 'theme'>[] = [
     link: "https://safewayinsure.com/" 
   },
   { 
-    name: "Digital Solutions", 
-    logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtif2a5Hr1Iz8HPYj0Pip9SKHpXDg1FpSKEQ&s", 
-    link: "https://digitalsolutions.com" 
+    name: "Chapa", 
+    logo: "https://workablehr.s3.amazonaws.com/uploads/account/open_graph_logo/659718/social?1752915461000", 
+    link: "https://chapa.co/" 
   },
   { 
     name: "Mega Properties", 
@@ -367,7 +367,7 @@ const partners: Omit<PartnerProps, 'theme'>[] = [
         {/* Join the Revolution Section */}
         <section className="py-16 px-4">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="max-w-4xl mx-auto text-center">
-            <h2 className={`text-3xl font-bold mb-6 ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>Join the Rental Revolution</h2>
+            <h2 className={`text-3xl font-bold mb-6 ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>Join the Rental <span className="text-[#FF8904]">Revolution</span></h2>
             <p className={`mb-8 ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>Whether you&apos;re listing a property or searching for your next home, Rentify makes the process simple, secure, and satisfying.</p>
             <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-4">
               <motion.div whileHover={{ scale: 1.05 }} className="w-full md:w-auto">
