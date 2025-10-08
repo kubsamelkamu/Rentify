@@ -9,10 +9,13 @@ const HeroSection: FC = () => {
         relative flex items-center justify-center
         w-full h-screen
         overflow-hidden
-        bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-900
       "
     >
-      <div className="absolute inset-0 bg-black/30" />
+      <div 
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('https://images.pexels.com/photos/7820358/pexels-photo-7820358.jpeg')" }}
+      />
+      <div className="absolute inset-0 bg-black/50" /> {/* Darker overlay for better text contrast */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
