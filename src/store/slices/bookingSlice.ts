@@ -59,7 +59,7 @@ export const requestBooking = createAsyncThunk<
       if (err instanceof Error) {
         return rejectWithValue(err.message);
       }
-      return rejectWithValue('An Error occured while request Booking.');
+      return rejectWithValue('Reserved.Try another Day.');
     }
   }
 );
