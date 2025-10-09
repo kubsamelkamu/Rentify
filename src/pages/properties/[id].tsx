@@ -64,7 +64,7 @@ const PropertyDetailPage: React.FC = () => {
     toast.promise(promise, {
       loading: 'Sending request...',
       success: 'Request sent!',
-      error: 'Request failed. Try again later.',
+      error: 'The Date you selected Unavailable for this properties.',
     });
     promise.then(() => {
       setStartDate('');
